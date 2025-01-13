@@ -142,22 +142,13 @@ export default function App() {
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
-            {messages.map((message, index) => (
-              <React.Fragment key={message.id}>
-                <ChatMessage 
-                  message={message}
-                  onSuggestionClick={handleSendMessage}
-                />
-                {message.sender === 'ai' && message.id !== '1' && message.content && index === messages.length - 1 && (
-                  <div className="p-4">
-                    <DataVisualization 
-                      data={sampleChartData} 
-                      suggestions={message.suggestions}
-                      onSuggestionClick={handleSendMessage}
-                    />
-                  </div>
-                )}
-              </React.Fragment>
+            {messages.map((message) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                onSuggestionClick={handleSendMessage}
+                chartData={sampleChartData} // pass chart data
+              />
             ))}
           </div>
         </div>

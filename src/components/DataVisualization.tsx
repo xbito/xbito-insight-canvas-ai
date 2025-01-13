@@ -82,23 +82,6 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
       </div>
       <Bar options={options} data={data} className="max-h-[500px]" />
       
-      {suggestions && suggestions.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="text-sm font-medium text-gray-500 mb-3">Suggested follow-up questions:</div>
-          <div className="flex flex-wrap gap-2">
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => onSuggestionClick?.(suggestion)}
-                className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
-              >
-                <span>{suggestion}</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

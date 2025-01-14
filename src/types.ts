@@ -5,6 +5,7 @@ export interface Message {
   timestamp: Date;
   suggestions?: string[];
   chartData?: ChartData;
+  chatTitle?: string;
 }
 
 export interface ChartData {

@@ -68,6 +68,22 @@ User query: "${userQuery}"`
   return parsed;
 };
 
+const determineChatTopic = async (userQuery: string) => {
+  const response = await ollama.chat({
+    model: 'llama3.1',
+    format: 'json',
+    messages: [
+      {
+        role: 'user',
+        content: `Please determine the topic of the conversation based on the user query: "${userQuery}". Return a JSON object with a single property "topic" that contains the topic as a string.`
+      }
+    ]
+  });
+  const data = await response;
+  const json_data = JSON.parse(data.message.content);
+  return json_data.topic;
+};
+
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -84,6 +100,7 @@ export default function App() {
       ]
     },
   ]);
+  const [chatTitle, setChatTitle] = useState<string>('New Chat');
 
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
@@ -105,6 +122,9 @@ export default function App() {
       chartData: chartResult
     };
     setMessages(prev => [...prev, aiMessage]);
+
+    const topic = await determineChatTopic(content);
+    setChatTitle(topic);
   };
 
   return (
@@ -119,7 +139,7 @@ export default function App() {
         </div>
         <div className="flex-1 overflow-y-auto p-4">
           <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">
-            New Chat
+            {chatTitle}
           </button>
         </div>
       </div>

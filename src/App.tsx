@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Message, ChartData } from './types';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
@@ -101,6 +101,8 @@ export default function App() {
     },
   ]);
   const [chatTitle, setChatTitle] = useState<string>('New Chat');
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
@@ -111,6 +113,7 @@ export default function App() {
     };
     setMessages(prev => [...prev, userMessage]);
 
+    setLoading(true);
     const data = await generateAIResponse(content);
     const chartResult = await generateChartData(content);
     const aiMessage: Message = {
@@ -125,7 +128,12 @@ export default function App() {
 
     const topic = await determineChatTopic(content);
     setChatTitle(topic);
+    setLoading(false);
   };
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -157,6 +165,12 @@ export default function App() {
                 chartData={message.chartData} // pass chart data
               />
             ))}
+            {loading && (
+              <div className="flex justify-center items-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-gray-400"></div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
         </div>
 

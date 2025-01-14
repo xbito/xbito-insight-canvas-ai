@@ -2,56 +2,8 @@ import React, { useState } from 'react';
 import { Message, ChartData } from './types';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
-import { DataVisualization } from './components/DataVisualization';
 import { BarChart } from 'lucide-react';
 import ollama from 'ollama';
-
-// Sample data with real bank awareness data
-const sampleChartData: ChartData = {
-  labels: [
-    'Wells Fargo',
-    'Chase',
-    'Bank of America',
-    'J.P. Morgan',
-    'JPMorgan Chase',
-    'Capital One',
-    'U.S. Bank',
-    'Citi',
-    'Chime',
-    'Citizens Bank'
-  ],
-  datasets: [
-    {
-      label: 'Brand Awareness',
-      data: [95, 93, 89, 89, 87, 87, 85, 84, 83, 79],
-      backgroundColor: [
-        'rgba(99, 102, 241, 0.8)',   // Wells Fargo
-        'rgba(251, 191, 36, 0.8)',   // Chase
-        'rgba(99, 102, 241, 0.8)',   // Bank of America
-        'rgba(99, 102, 241, 0.8)',   // J.P. Morgan
-        'rgba(6, 95, 70, 0.8)',      // JPMorgan Chase
-        'rgba(14, 165, 233, 0.8)',   // Capital One
-        'rgba(14, 165, 233, 0.8)',   // U.S. Bank
-        'rgba(22, 163, 74, 0.8)',    // Citi
-        'rgba(136, 19, 55, 0.8)',    // Chime
-        'rgba(220, 38, 38, 0.8)'     // Citizens Bank
-      ],
-      borderColor: [
-        'rgba(99, 102, 241, 1)',
-        'rgba(251, 191, 36, 1)',
-        'rgba(99, 102, 241, 1)',
-        'rgba(99, 102, 241, 1)',
-        'rgba(6, 95, 70, 1)',
-        'rgba(14, 165, 233, 1)',
-        'rgba(14, 165, 233, 1)',
-        'rgba(22, 163, 74, 1)',
-        'rgba(136, 19, 55, 1)',
-        'rgba(220, 38, 38, 1)'
-      ],
-      borderWidth: 1,
-    },
-  ],
-};
 
 // Simulated AI response generator
 const generateAIResponse = async (userQuery: string) => {
@@ -83,6 +35,39 @@ const generateAIResponse = async (userQuery: string) => {
   return json_data;
 };
 
+const generateChartData = async (userQuery: string) => {
+  const resp = await ollama.chat({
+    model: 'llama3.1',
+    format: 'json',
+    messages: [
+      {
+        role: 'user',
+        content: `We have a TypeScript interface ChartData with this shape:
+{
+  labels: string[];
+  title: string;
+  dateRange: string;
+  demographic: string;
+  datasets: [{
+    label: string;
+    data: number[];
+    backgroundColor: string[];
+    borderColor: string[];
+    borderWidth: number;
+  }]
+}.
+Please produce "chartData" strictly matching that shape for a bar chart with up to 10 labels each corresponding to a brand
+Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
+Include title, dateRange, demographic. Generate fictional but believable data. 
+User query: "${userQuery}"`
+      }
+    ]
+  });
+  const parsed = JSON.parse(resp.message.content);
+  console.log(parsed);
+  return parsed;
+};
+
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -110,12 +95,14 @@ export default function App() {
     setMessages(prev => [...prev, userMessage]);
 
     const data = await generateAIResponse(content);
+    const chartResult = await generateChartData(content);
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
       content: data.content,
       sender: 'ai',
       timestamp: new Date(),
-      suggestions: data.suggestions
+      suggestions: data.suggestions,
+      chartData: chartResult
     };
     setMessages(prev => [...prev, aiMessage]);
   };
@@ -147,7 +134,7 @@ export default function App() {
                 key={message.id}
                 message={message}
                 onSuggestionClick={handleSendMessage}
-                chartData={sampleChartData} // pass chart data
+                chartData={message.chartData} // pass chart data
               />
             ))}
           </div>

@@ -30,8 +30,6 @@ interface DataVisualizationProps {
 
 export const DataVisualization: React.FC<DataVisualizationProps> = ({ 
   data,
-  title = "Top 10 Banks by Total Awareness",
-  suggestions,
   onSuggestionClick
 }) => {
   const options = {
@@ -64,19 +62,15 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="space-y-4 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        <h2 className="text-xl font-semibold text-gray-900">{data.title}</h2>
         <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
           <div>
             <span className="font-medium">DATE RANGE</span>
-            <div className="mt-1">Jan 8, 2024 - Jan 8, 2025</div>
-          </div>
-          <div>
-            <span className="font-medium">INTERVAL</span>
-            <div className="mt-1">All</div>
+            <div className="mt-1">{data.dateRange}</div>
           </div>
           <div>
             <span className="font-medium">DEMOGRAPHIC</span>
-            <div className="mt-1">General Population</div>
+            <div className="mt-1">{data.demographic}</div>
           </div>
         </div>
       </div>

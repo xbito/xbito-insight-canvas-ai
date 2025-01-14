@@ -52,6 +52,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionC
             />
           </div>
         )}
+
+
         {isAI && message.id !== '1' && message.suggestions && message.suggestions.length > 0 && (
           <div className="mt-4 space-y-2">
             <div className="text-sm font-medium text-gray-500">Suggested follow-up questions:</div>

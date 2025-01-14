@@ -11,9 +11,8 @@ const generateAIResponse = async (userQuery: string) => {
   const example_suggestions = [
     "Show me the top car brands by awareness.",
     "Which coffee shops are most popular with millennials?",
-    "How often do college-educated millenials hear about Nike?",
-    "What is the income distribution of people who know about Tesla?",
-    "Among those who shop at Walmart, how much do they consider buying from Amazon?",
+    "What are the most trusted smartphone brands globally?",
+    "Which fitness app is preferred by Gen Z users?",
   ]
   const response = await ollama.chat({
     model: 'llama3.1',
@@ -94,9 +93,8 @@ export default function App() {
       suggestions: [
         "Show me the top car brands by awareness.",
         "Which coffee shops are most popular with millennials?",
-        "How often do college-educated millenials hear about Nike?",
-        "What is the income distribution of people who know about Tesla?",
-        "Among those who shop at Walmart, how much do they consider buying from Amazon?",
+        "What are the most trusted smartphone brands globally?",
+        "Which fitness app is preferred by Gen Z users?",
       ]
     },
   ]);

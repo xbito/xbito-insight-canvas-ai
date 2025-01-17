@@ -100,6 +100,8 @@ export default function App() {
   ]);
   const [chatTitle, setChatTitle] = useState<string>('New Chat');
   const [loading, setLoading] = useState(false);
+  const [industry, setIndustry] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = async (content: string) => {
@@ -147,6 +149,41 @@ export default function App() {
           <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">
             {chatTitle}
           </button>
+        </div>
+        <div className="mt-auto p-4 border-t border-gray-200">
+          <label className="block text-sm font-medium text-gray-700" htmlFor="industrySelect">Industry</label>
+          <select
+            id="industrySelect"
+            value={industry}
+            onChange={(e) => setIndustry(e.target.value)}
+            className="mt-1 block w-full border-gray-300 rounded-md"
+          >
+            <option value="">Select Industry</option>
+            <option value="automobiles">Automobiles</option>
+            <option value="airlines">Airlines</option>
+            <option value="beverage">Beverage</option>
+            <option value="retail">Retail</option>
+            <option value="banks">Banks</option>
+            <option value="phones">Phones</option>
+            <option value="food">Food</option>
+            <option value="cosmetics">Cosmetics</option>
+            <option value="apparel">Apparel</option>
+            <option value="electronics">Electronics</option>
+            <option value="media">Media</option>
+            <option value="social-media-apps">Social Media apps</option>
+            <option value="health-pharma">Health/Pharma</option>
+            <option value="sports">Sports</option>
+            <option value="appliances">Appliances</option>
+          </select>
+
+          <label className="block text-sm font-medium text-gray-700 mt-4" htmlFor="companyName">Company Name</label>
+          <input
+            id="companyName"
+            type="text"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            className="mt-1 block w-full border-gray-300 rounded-md"
+          />
         </div>
       </div>
 

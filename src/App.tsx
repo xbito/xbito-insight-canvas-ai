@@ -20,6 +20,10 @@ const ContentSuggestions = z.object({
   suggestions: z.array(z.string())
 });
 
+const ChatTopicSchema = z.object({
+  topic: z.string()
+});
+
 // Simulated AI response generator
 const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boolean) => {
   if (useOpenAI) {
@@ -28,11 +32,11 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
     console.log('Truncated API Key:', apiKey.slice(0, 5));
     const messages = [
       {
-        role: 'system',
+        role: 'system' as const,
         content: 'You are a helpful assistant. You are trained on recognizing brand sentiment and audience data and creating visualizations.'
       },
       {
-        role: 'user',
+        role: 'user' as const,
         content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. The suggestions should be phrased as if the user was the one that is going to send that message. Don't instruct the user on what to think about next, rather exactly suggest what phrase they may use as a response/follow up. The suggestions should aim to generate more graphs to analyze brand sentiment and audience data. User query: "${userQuery}"`
       }
     ];
@@ -110,23 +114,50 @@ User query: "${userQuery}"`
   return parsed;
 };
 
-const determineChatTopic = async (userQuery: string, industry: string, companyName: string) => {
-  const response = await ollama.chat({
-    model: 'llama3.1',
-    format: 'json',
-    messages: [
-      { role: 'system', 
-        content: 'You are a helpful assistant. You are trained on recognizing brand sentiment and audience data and creating visualizations. You are asked to determine the topic of the conversation based on the user query, industry, and company name. Return a JSON object with a single property "topic" that contains the topic as a string.' 
+const determineChatTopic = async (
+  userQuery: string,
+  industry: string,
+  companyName: string,
+  useOpenAI: boolean
+) => {
+  if (useOpenAI) {
+    // Use OpenAI
+    const messages = [
+      {
+        role: 'system' as const,
+        content: 'You are a helpful assistant. Return a JSON object with property "topic" containing the conversation topic as a string.'
       },
       {
-        role: 'user',
-        content: `Please determine the topic of the conversation based on the user query: "${userQuery}", industry: "${industry}", and company name: "${companyName}". Return a JSON object with a single property "topic" that contains the topic as a string.`
+        role: 'user' as const,
+        content: `User query: "${userQuery}", industry: "${industry}", company name: "${companyName}".`
       }
-    ]
-  });
-  const data = await response;
-  const json_data = JSON.parse(data.message.content);
-  return json_data.topic;
+    ];
+    const response = await openai.beta.chat.completions.parse({
+      model: 'gpt-4o-2024-08-06',
+      messages: messages,
+      response_format: zodResponseFormat(ChatTopicSchema, 'topic'),
+    });
+    return response.choices[0].message.parsed.topic;
+  } else {
+    // ...existing code for ollama...
+    const response = await ollama.chat({
+      model: 'llama3.1',
+      format: 'json',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are asked to return a JSON object with a single property "topic".'
+        },
+        {
+          role: 'user',
+          content: `Please determine the topic of the conversation based on the user query: "${userQuery}", industry: "${industry}", and company name: "${companyName}". Return JSON with the single property "topic".`
+        }
+      ]
+    });
+    const data = await response;
+    const json_data = JSON.parse(data.message.content);
+    return json_data.topic;
+  }
 };
 
 const defaultSuggestions = [
@@ -177,7 +208,7 @@ export default function App() {
     };
     setMessages(prev => [...prev, aiMessage]);
 
-    const topic = await determineChatTopic(content, industry, companyName);
+    const topic = await determineChatTopic(content, industry, companyName, useOpenAI);
     setChatTitle(topic);
     setLoading(false);
   };

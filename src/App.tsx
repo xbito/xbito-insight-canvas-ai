@@ -24,8 +24,28 @@ const ChatTopicSchema = z.object({
   topic: z.string()
 });
 
+const ChartDataSchema = z.object({
+  labels: z.array(z.string()),
+  title: z.string(),
+  dateRange: z.string(),
+  demographic: z.string(),
+  datasets: z.array(z.object({
+    label: z.string(),
+    data: z.array(z.number()),
+    backgroundColor: z.array(z.string()),
+    borderColor: z.array(z.string()),
+    borderWidth: z.number()
+  }))
+});
+
 // Simulated AI response generator
 const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boolean) => {
+  const example_suggestions = [
+    "Show me the top car brands by awareness.",
+    "Which coffee shops are most popular with millennials?",
+    "What are the most trusted smartphone brands globally?",
+    "Which fitness app is preferred by Gen Z users?",
+  ]
   if (useOpenAI) {
     console.log('Using OpenAI API');
     const apiKey = env.OPENAI_API_KEY;
@@ -33,11 +53,17 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
     const messages = [
       {
         role: 'system' as const,
-        content: 'You are a helpful assistant. You are trained on recognizing brand sentiment and audience data and creating visualizations.'
+        content: `You are a helpful assistant. 
+        The suggestions you give should be phrased as if the user was the one that is going to send that message.
+        The suggestions are single-sentence strings that aim to generate more graphs to analyze brand sentiment and audience data.
+        The suggestions you give should be possible to answer through bar graphs.
+        Don't instruct the user on what to think about next, rather exactly suggest what phrase they may use as a response/follow up.
+        You are trained on recognizing brand sentiment and audience data and creating visualizations.
+        Here are some example suggestions: ${example_suggestions.join(', ')}.`
       },
       {
         role: 'user' as const,
-        content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. The suggestions should be phrased as if the user was the one that is going to send that message. Don't instruct the user on what to think about next, rather exactly suggest what phrase they may use as a response/follow up. The suggestions should aim to generate more graphs to analyze brand sentiment and audience data. User query: "${userQuery}"`
+        content: `User query: "${userQuery}"`
       }
     ];
 
@@ -54,12 +80,6 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
   } else {
     console.log('NOT using OpenAI API');
     // Example call to local Llama API
-    const example_suggestions = [
-      "Show me the top car brands by awareness.",
-      "Which coffee shops are most popular with millennials?",
-      "What are the most trusted smartphone brands globally?",
-      "Which fitness app is preferred by Gen Z users?",
-    ]
     const response = await ollama.chat({
       model: 'llama3.1',
       format: 'json',
@@ -81,14 +101,36 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
   }
 };
 
-const generateChartData = async (userQuery: string) => {
-  const resp = await ollama.chat({
-    model: 'llama3.1',
-    format: 'json',
-    messages: [
+const generateChartData = async (userQuery: string, useOpenAI: boolean) => {
+  if (useOpenAI) {
+    const messages = [
       {
-        role: 'user',
-        content: `We have a TypeScript interface ChartData with this shape:
+        role: 'system' as const,
+        content: `We have a TypeScript interface ChartData. 
+        You will help us produce credible chart data for a bar chart with  up to 10 labels corresponding to the user query that is going to be passed by the user. 
+        Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
+        Generate fictional but believable data.
+        The data should be strictly matching the shape of the ChartData interface.`
+      },
+      {
+        role: 'user' as const,
+        content: `User query: "${userQuery}".`
+      }
+    ];
+    const response = await openai.beta.chat.completions.parse({
+      model: "gpt-4o-2024-08-06",
+      messages,
+      response_format: zodResponseFormat(ChartDataSchema, "chartData"),
+    });
+    return response.choices[0].message.parsed;
+  } else {
+    const resp = await ollama.chat({
+      model: 'llama3.1',
+      format: 'json',
+      messages: [
+        {
+          role: 'user',
+          content: `We have a TypeScript interface ChartData with this shape:
 {
   labels: string[];
   title: string;
@@ -106,12 +148,13 @@ Please produce "chartData" strictly matching that shape for a bar chart with up 
 Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
 Include title, dateRange, demographic. Generate fictional but believable data. 
 User query: "${userQuery}"`
-      }
-    ]
-  });
-  const parsed = JSON.parse(resp.message.content);
-  console.log(parsed);
-  return parsed;
+        }
+      ]
+    });
+    const parsed = JSON.parse(resp.message.content);
+    console.log(parsed);
+    return parsed;
+  }
 };
 
 const determineChatTopic = async (
@@ -139,7 +182,6 @@ const determineChatTopic = async (
     });
     return response.choices[0].message.parsed.topic;
   } else {
-    // ...existing code for ollama...
     const response = await ollama.chat({
       model: 'llama3.1',
       format: 'json',
@@ -197,7 +239,7 @@ export default function App() {
 
     setLoading(true);
     const data = await generateAISuggestionsResponse(content, useOpenAI);
-    const chartResult = await generateChartData(content);
+    const chartResult = await generateChartData(content, useOpenAI);
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
       content: data.content,

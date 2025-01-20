@@ -21,7 +21,7 @@ const ContentSuggestions = z.object({
 });
 
 // Simulated AI response generator
-const generateAIResponse = async (userQuery: string, useOpenAI: boolean) => {
+const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boolean) => {
   if (useOpenAI) {
     console.log('Using OpenAI API');
     const apiKey = env.OPENAI_API_KEY;
@@ -110,14 +110,17 @@ User query: "${userQuery}"`
   return parsed;
 };
 
-const determineChatTopic = async (userQuery: string) => {
+const determineChatTopic = async (userQuery: string, industry: string, companyName: string) => {
   const response = await ollama.chat({
     model: 'llama3.1',
     format: 'json',
     messages: [
+      { role: 'system', 
+        content: 'You are a helpful assistant. You are trained on recognizing brand sentiment and audience data and creating visualizations. You are asked to determine the topic of the conversation based on the user query, industry, and company name. Return a JSON object with a single property "topic" that contains the topic as a string.' 
+      },
       {
         role: 'user',
-        content: `Please determine the topic of the conversation based on the user query: "${userQuery}". Return a JSON object with a single property "topic" that contains the topic as a string.`
+        content: `Please determine the topic of the conversation based on the user query: "${userQuery}", industry: "${industry}", and company name: "${companyName}". Return a JSON object with a single property "topic" that contains the topic as a string.`
       }
     ]
   });
@@ -162,7 +165,7 @@ export default function App() {
     setMessages(prev => [...prev, userMessage]);
 
     setLoading(true);
-    const data = await generateAIResponse(content, useOpenAI);
+    const data = await generateAISuggestionsResponse(content, useOpenAI);
     const chartResult = await generateChartData(content);
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
@@ -174,7 +177,7 @@ export default function App() {
     };
     setMessages(prev => [...prev, aiMessage]);
 
-    const topic = await determineChatTopic(content);
+    const topic = await determineChatTopic(content, industry, companyName);
     setChatTitle(topic);
     setLoading(false);
   };

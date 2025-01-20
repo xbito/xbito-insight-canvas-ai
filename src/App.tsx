@@ -4,34 +4,72 @@ import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
 import { BarChart } from 'lucide-react';
 import ollama from 'ollama';
+import { getInitialSuggestions } from './initialSuggestions';
+import { env } from './config/env';
 
 // Simulated AI response generator
-const generateAIResponse = async (userQuery: string) => {
-  // Example call to local Llama API
-  const example_suggestions = [
-    "Show me the top car brands by awareness.",
-    "Which coffee shops are most popular with millennials?",
-    "What are the most trusted smartphone brands globally?",
-    "Which fitness app is preferred by Gen Z users?",
-  ]
-  const response = await ollama.chat({
-    model: 'llama3.1',
-    format: 'json',
-    messages :[
+const generateAIResponse = async (userQuery: string, useOpenAI: boolean) => {
+  if (useOpenAI) {
+    console.log('Using OpenAI API');
+    const apiKey = env.OPENAI_API_KEY;
+    console.log('API Key:', apiKey);
+    const messages = [
       {
         role: 'user',
-        content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. The suggestions should be phrased as if the user was the one that is going to send that message. Don't instruct the user on what to think about next, rather exactly suggest what phrase he may use as a response/follow up. The suggestions should aim to generate more graphs to analyze brand sentiment and audience data and create visualizations. Here general example suggestions: ${example_suggestions.join(', ')}. User query: "${userQuery}"`
+        content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. The suggestions should be phrased as if the user was the one that is going to send that message. Don't instruct the user on what to think about next, rather exactly suggest what phrase they may use as a response/follow up. The suggestions should aim to generate more graphs to analyze brand sentiment and audience data. User query: "${userQuery}"`
       }
+    ];
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages,
+        temperature: 0.7
+      })
+    });
+
+    const data = await response.json();
+    const rawContent = data.choices[0]?.message?.content || '{}';
+    const json_data = JSON.parse(rawContent);
+
+    // If the response came with suggestions in an unexpected format, like a list of objects rather than a list of phrases, try to extract the phrases:
+    if (json_data.suggestions && json_data.suggestions.length > 0 && typeof(json_data.suggestions[0]) === 'object') {
+      json_data.suggestions = json_data.suggestions.map((suggestion: any) => suggestion.phrase);
+    }
+    return json_data;
+  } else {
+    console.log('NOT using OpenAI API');
+    // Example call to local Llama API
+    const example_suggestions = [
+      "Show me the top car brands by awareness.",
+      "Which coffee shops are most popular with millennials?",
+      "What are the most trusted smartphone brands globally?",
+      "Which fitness app is preferred by Gen Z users?",
     ]
-  });
-  const data = await response;
-  console.log(data.message.content, typeof(data.message.content));
-  const json_data = JSON.parse(data.message.content);
-  // If the response came with suggestions in an unexpected format, like a list of objects rather than a list of phrases, try to extract the phrases:
-  if (json_data.suggestions && json_data.suggestions.length > 0 && typeof(json_data.suggestions[0]) === 'object') {
-    json_data.suggestions = json_data.suggestions.map((suggestion: any) => suggestion.phrase);
+    const response = await ollama.chat({
+      model: 'llama3.1',
+      format: 'json',
+      messages :[
+        {
+          role: 'user',
+          content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. The suggestions should be phrased as if the user was the one that is going to send that message. Don't instruct the user on what to think about next, rather exactly suggest what phrase he may use as a response/follow up. The suggestions should aim to generate more graphs to analyze brand sentiment and audience data and create visualizations. Here general example suggestions: ${example_suggestions.join(', ')}. User query: "${userQuery}"`
+        }
+      ]
+    });
+    const data = await response;
+    console.log(data.message.content, typeof(data.message.content));
+    const json_data = JSON.parse(data.message.content);
+    // If the response came with suggestions in an unexpected format, like a list of objects rather than a list of phrases, try to extract the phrases:
+    if (json_data.suggestions && json_data.suggestions.length > 0 && typeof(json_data.suggestions[0]) === 'object') {
+      json_data.suggestions = json_data.suggestions.map((suggestion: any) => suggestion.phrase);
+    }
+    return json_data;
   }
-  return json_data;
 };
 
 const generateChartData = async (userQuery: string) => {
@@ -83,25 +121,30 @@ const determineChatTopic = async (userQuery: string) => {
   return json_data.topic;
 };
 
+const defaultSuggestions = [
+  "Show me the top car brands by awareness.",
+  "Which coffee shops are most popular with millennials?"
+];
+
 export default function App() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: 'Hello! I can help you analyze brand sentiment and audience data and create visualizations. What would you like to know?',
-      sender: 'ai',
-      timestamp: new Date(),
-      suggestions: [
-        "Show me the top car brands by awareness.",
-        "Which coffee shops are most popular with millennials?",
-        "What are the most trusted smartphone brands globally?",
-        "Which fitness app is preferred by Gen Z users?",
-      ]
-    },
-  ]);
-  const [chatTitle, setChatTitle] = useState<string>('New Chat');
-  const [loading, setLoading] = useState(false);
   const [industry, setIndustry] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [useOpenAI, setUseOpenAI] = useState(false);
+
+  const createInitialMessage = (ind?: string, comp?: string): Message => ({
+    id: '1',
+    content: 'Hello! I can help you analyze brand sentiment and audience data and create visualizations. What would you like to know?',
+    sender: 'ai',
+    timestamp: new Date(),
+    suggestions: (ind || comp)
+      ? getInitialSuggestions(ind || '', comp || '')
+      : defaultSuggestions,
+  });
+
+  const [messages, setMessages] = useState<Message[]>([createInitialMessage()]);
+
+  const [chatTitle, setChatTitle] = useState<string>('New Chat');
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = async (content: string) => {
@@ -114,7 +157,7 @@ export default function App() {
     setMessages(prev => [...prev, userMessage]);
 
     setLoading(true);
-    const data = await generateAIResponse(content);
+    const data = await generateAIResponse(content, useOpenAI);
     const chartResult = await generateChartData(content);
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
@@ -130,6 +173,14 @@ export default function App() {
     setChatTitle(topic);
     setLoading(false);
   };
+
+  useEffect(() => {
+    // Update only the first AI message suggestions if industry or company name changed
+    setMessages((prev) => {
+      const updatedAIMessage = createInitialMessage(industry, companyName);
+      return [updatedAIMessage, ...prev.slice(1)];
+    });
+  }, [industry, companyName]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -184,6 +235,16 @@ export default function App() {
             onChange={(e) => setCompanyName(e.target.value)}
             className="mt-1 block w-full border-gray-300 rounded-md"
           />
+
+          <div className="mt-4 flex items-center">
+            <label className="block text-sm font-medium text-gray-700 mr-2">Use OpenAI</label>
+            <input
+              type="checkbox"
+              checked={useOpenAI}
+              onChange={(e) => setUseOpenAI(e.target.checked)}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+            />
+          </div>
         </div>
       </div>
 

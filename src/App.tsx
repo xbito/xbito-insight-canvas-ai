@@ -6,42 +6,47 @@ import { BarChart } from 'lucide-react';
 import ollama from 'ollama';
 import { getInitialSuggestions } from './initialSuggestions';
 import { env } from './config/env';
+import OpenAI from 'openai';
+import { zodResponseFormat } from "openai/helpers/zod";
+import { z } from "zod";
+
+const openai = new OpenAI({
+  apiKey: env.OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
+
+const ContentSuggestions = z.object({
+  content: z.string(),
+  suggestions: z.array(z.string())
+});
 
 // Simulated AI response generator
 const generateAIResponse = async (userQuery: string, useOpenAI: boolean) => {
   if (useOpenAI) {
     console.log('Using OpenAI API');
     const apiKey = env.OPENAI_API_KEY;
-    console.log('API Key:', apiKey);
+    console.log('Truncated API Key:', apiKey.slice(0, 5));
     const messages = [
+      {
+        role: 'system',
+        content: 'You are a helpful assistant. You are trained on recognizing brand sentiment and audience data and creating visualizations.'
+      },
       {
         role: 'user',
         content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. The suggestions should be phrased as if the user was the one that is going to send that message. Don't instruct the user on what to think about next, rather exactly suggest what phrase they may use as a response/follow up. The suggestions should aim to generate more graphs to analyze brand sentiment and audience data. User query: "${userQuery}"`
       }
     ];
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages,
-        temperature: 0.7
-      })
+
+    const response = await openai.beta.chat.completions.parse({
+      model: "gpt-4o-2024-08-06",
+      messages: messages,
+      response_format: zodResponseFormat(ContentSuggestions, "suggestions"),
     });
-
-    const data = await response.json();
-    const rawContent = data.choices[0]?.message?.content || '{}';
-    const json_data = JSON.parse(rawContent);
-
-    // If the response came with suggestions in an unexpected format, like a list of objects rather than a list of phrases, try to extract the phrases:
-    if (json_data.suggestions && json_data.suggestions.length > 0 && typeof(json_data.suggestions[0]) === 'object') {
-      json_data.suggestions = json_data.suggestions.map((suggestion: any) => suggestion.phrase);
-    }
-    return json_data;
+    const { content, suggestions } = response.choices[0].message.parsed;
+    console.log('OpenAI response:', content, suggestions);
+    // return in json format
+    return { content, suggestions };
   } else {
     console.log('NOT using OpenAI API');
     // Example call to local Llama API

@@ -10,6 +10,69 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
+const main_system_prompt = `You are a helpful assistant in market research, an expert in brand sentiment analysis.
+Your mission is to: Enable users to uncover non-obvious patterns in sentiment data through AI-guided exploration that adapts based on their context and previous discoveries.
+Your Dataset is a collection of brand sentiment and audience data.
+You have the following data about respondents:
+age
+gender
+state_province
+city
+zip_postal_code
+country
+residence_type (urban/suburban/rural)
+education_level
+employment_status
+occupation
+marital_status
+household_size
+num_children
+income_bracket
+race_ethnicity
+main_language
+home_ownership (own/rent)
+political_leaning
+religion
+social_media_use_freq
+streaming_services_use_freq
+purchase_behavior (online/in-store)
+car_ownership
+smoking_status
+drinking_status
+dietary_preference
+fitness_activity
+news_consumption_pref
+tech_adoption_tendency (early/late)
+credit_card_usage
+payment_method_pref (cash/card/digital)
+smartphone_usage_type (Android/iOS/etc.)
+brand_preference_history (could store as text or JSON)
+travel_frequency
+banking_relationship
+internet_speed_type
+music_preference
+pet_ownership
+clothing_style_pref
+grocery_spend (budget/premium)
+
+You have the following data about brands:
+brand_name
+industry
+country_of_origin
+
+You have the following daily data about brand sentiment:
+date (the day of data collection)
+respondent_id (FK to Respondent)
+brand_id (FK to Brand)
+sentiment_score (numeric)
+awareness_score (numeric)
+loyalty_score (numeric)
+purchase_intent_score (numeric)
+other_scores (if any extra metrics come up)
+
+Your data ranges from 2010 to January 2025.
+`
+
 const openai = new OpenAI({
   apiKey: env.OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
@@ -56,14 +119,10 @@ const generateAISuggestionsResponse = async (
     const messages = [
       {
         role: 'system' as const,
-        content: `You are a helpful assistant in market research, an expert in brand sentiment analysis. 
-        Your mission is to: Enable users to uncover non-obvious patterns in sentiment data through AI-guided exploration that adapts based on their context and previous discoveries.
-        Traditional dashboards require users to know what questions to ask, but often in brand sentiment analysis, the most valuable insights are the ones users didn't necessarily think to look for.
-        The suggestions you give should be phrased as if the user was the one that is going to send that message.
-        The suggestions are single-sentence strings that aim to generate more graphs to analyze brand sentiment and audience data.
-        The suggestions you give should be possible to answer through bar graphs.
-        Don't instruct the user on what to think about next, rather exactly suggest what phrase they may use as a response/follow up.
-        You are trained on recognizing brand sentiment and audience data and creating visualizations.
+        content: `${main_system_prompt}
+        The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
+        They must be possible to answer with bar graphs.
+        Don't instruct the user on what to think, only suggest a short phrase they might say next.
         Here are some example suggestions: ${example_suggestions.join(', ')}.`
       },
       {
@@ -120,12 +179,11 @@ const generateChartData = async (
     const messages = [
       {
         role: 'system' as const,
-        content: `You are a helpful assistant in market research, an expert in brand sentiment analysis.
-        We have a TypeScript interface ChartData. 
-        You will help us produce credible chart data for a bar chart with  up to 10 labels corresponding to the user query that is going to be passed by the user. 
-        Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
-        Generate fictional but believable data. Strongly prefer to use real brand names rather than made-up or generic ones like "Brand A", "Brand B".
-        The data should be strictly matching the shape of the ChartData interface.`
+        content: `${main_system_prompt}
+        We have a TypeScript interface ChartData with strict shape requirements. 
+        Return a plausible bar-chart dataset with up to 10 labels reflecting the user query. 
+        Each label's data field is a percentage (0-100). 
+        Strongly prefer real brand names to generic ones.`
       },
       {
         role: 'user' as const,
@@ -188,9 +246,8 @@ const determineChatTopic = async (
     const messages = [
       {
         role: 'system' as const,
-        content: `You are a helpful assistant in market research, an expert in brand sentiment analysis. 
-        You will suggest an appropriate topic to name the conversation you are having with the user depending on the User query, and if passed, the industry and company name they belong to.
-        A topic is a short phrase that summarizes the main subject of the conversation.`
+        content: `${main_system_prompt}
+        You will suggest a short topic that summarizes the conversation based on the user query, industry, and company name.`
       },
       {
         role: 'user' as const,

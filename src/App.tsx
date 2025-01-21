@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Message, ChartData } from './types';
+import { Message } from './types';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
 import { BarChart } from 'lucide-react';
@@ -47,13 +47,14 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
     "Which fitness app is preferred by Gen Z users?",
   ]
   if (useOpenAI) {
-    console.log('Using OpenAI API');
+    console.log('OpenAI for suggestions');
     const apiKey = env.OPENAI_API_KEY;
-    console.log('Truncated API Key:', apiKey.slice(0, 5));
     const messages = [
       {
         role: 'system' as const,
-        content: `You are a helpful assistant. 
+        content: `You are a helpful assistant in market research, an expert in brand sentiment analysis. 
+        Your mission is to: Enable users to uncover non-obvious patterns in sentiment data through AI-guided exploration that adapts based on their context and previous discoveries.
+        Traditional dashboards require users to know what questions to ask, but often in brand sentiment analysis, the most valuable insights are the ones users didn't necessarily think to look for.
         The suggestions you give should be phrased as if the user was the one that is going to send that message.
         The suggestions are single-sentence strings that aim to generate more graphs to analyze brand sentiment and audience data.
         The suggestions you give should be possible to answer through bar graphs.
@@ -78,7 +79,7 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
     // return in json format
     return { content, suggestions };
   } else {
-    console.log('NOT using OpenAI API');
+    console.log("Llama for suggestions");
     // Example call to local Llama API
     const response = await ollama.chat({
       model: 'llama3.1',
@@ -91,7 +92,6 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
       ]
     });
     const data = await response;
-    console.log(data.message.content, typeof(data.message.content));
     const json_data = JSON.parse(data.message.content);
     // If the response came with suggestions in an unexpected format, like a list of objects rather than a list of phrases, try to extract the phrases:
     if (json_data.suggestions && json_data.suggestions.length > 0 && typeof(json_data.suggestions[0]) === 'object') {
@@ -103,13 +103,14 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
 
 const generateChartData = async (userQuery: string, useOpenAI: boolean) => {
   if (useOpenAI) {
+    console.log('OpenAI for chart data');
     const messages = [
       {
         role: 'system' as const,
         content: `We have a TypeScript interface ChartData. 
         You will help us produce credible chart data for a bar chart with  up to 10 labels corresponding to the user query that is going to be passed by the user. 
         Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
-        Generate fictional but believable data.
+        Generate fictional but believable data. Strongly prefer to use real brand names rather than made-up or generic ones like "Brand A", "Brand B".
         The data should be strictly matching the shape of the ChartData interface.`
       },
       {
@@ -124,6 +125,7 @@ const generateChartData = async (userQuery: string, useOpenAI: boolean) => {
     });
     return response.choices[0].message.parsed;
   } else {
+    console.log('Llama for chart data');
     const resp = await ollama.chat({
       model: 'llama3.1',
       format: 'json',
@@ -152,7 +154,6 @@ User query: "${userQuery}"`
       ]
     });
     const parsed = JSON.parse(resp.message.content);
-    console.log(parsed);
     return parsed;
   }
 };
@@ -164,6 +165,7 @@ const determineChatTopic = async (
   useOpenAI: boolean
 ) => {
   if (useOpenAI) {
+    console.log('OpenAI for topic');
     // Use OpenAI
     const messages = [
       {
@@ -182,6 +184,7 @@ const determineChatTopic = async (
     });
     return response.choices[0].message.parsed.topic;
   } else {
+    console.log('Llama for topic');
     const response = await ollama.chat({
       model: 'llama3.1',
       format: 'json',

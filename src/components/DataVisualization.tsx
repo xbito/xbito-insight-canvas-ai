@@ -10,7 +10,6 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { ChartData } from '../types';
-import { ArrowRight } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,

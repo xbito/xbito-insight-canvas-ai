@@ -39,7 +39,12 @@ const ChartDataSchema = z.object({
 });
 
 // Simulated AI response generator
-const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boolean) => {
+const generateAISuggestionsResponse = async (
+  userQuery: string,
+  useOpenAI: boolean,
+  industry?: string,
+  companyName?: string
+) => {
   const example_suggestions = [
     "Show me the top car brands by awareness.",
     "Which coffee shops are most popular with millennials?",
@@ -64,7 +69,9 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
       },
       {
         role: 'user' as const,
-        content: `User query: "${userQuery}"`
+        content: `User query: "${userQuery}"${
+          industry ? `, industry: "${industry}"` : ''
+        }${companyName ? `, company name: "${companyName}"` : ''}.`
       }
     ];
 
@@ -87,7 +94,9 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
       messages :[
         {
           role: 'user',
-          content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. The suggestions should be phrased as if the user was the one that is going to send that message. Don't instruct the user on what to think about next, rather exactly suggest what phrase he may use as a response/follow up. The suggestions should aim to generate more graphs to analyze brand sentiment and audience data and create visualizations. Here general example suggestions: ${example_suggestions.join(', ')}. User query: "${userQuery}"`
+          content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. The suggestions should be phrased as if the user was the one that is going to send that message. Don't instruct the user on what to think about next, rather exactly suggest what phrase he may use as a response/follow up. The suggestions should aim to generate more graphs to analyze brand sentiment and audience data and create visualizations. Here general example suggestions: ${example_suggestions.join(', ')}. User query: "${userQuery}"${
+            industry ? `, industry: "${industry}"` : ''
+          }${companyName ? `, company: "${companyName}"` : ''}.`
         }
       ]
     });
@@ -101,7 +110,12 @@ const generateAISuggestionsResponse = async (userQuery: string, useOpenAI: boole
   }
 };
 
-const generateChartData = async (userQuery: string, useOpenAI: boolean) => {
+const generateChartData = async (
+  userQuery: string,
+  useOpenAI: boolean,
+  industry?: string,
+  companyName?: string
+) => {
   if (useOpenAI) {
     console.log('OpenAI for chart data');
     const messages = [
@@ -115,7 +129,9 @@ const generateChartData = async (userQuery: string, useOpenAI: boolean) => {
       },
       {
         role: 'user' as const,
-        content: `User query: "${userQuery}".`
+        content: `User query: "${userQuery}"${
+          industry ? `, industry: "${industry}"` : ''
+        }${companyName ? `, company name: "${companyName}"` : ''}.`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -149,7 +165,9 @@ const generateChartData = async (userQuery: string, useOpenAI: boolean) => {
 Please produce "chartData" strictly matching that shape for a bar chart with up to 10 labels each corresponding to a brand
 Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
 Include title, dateRange, demographic. Generate fictional but believable data. 
-User query: "${userQuery}"`
+User query: "${userQuery}"${
+  industry ? `, industry: "${industry}"` : ''
+}${companyName ? `, company name: "${companyName}"` : ''}.`
         }
       ]
     });
@@ -241,8 +259,8 @@ export default function App() {
     setMessages(prev => [...prev, userMessage]);
 
     setLoading(true);
-    const data = await generateAISuggestionsResponse(content, useOpenAI);
-    const chartResult = await generateChartData(content, useOpenAI);
+    const data = await generateAISuggestionsResponse(content, useOpenAI, industry, companyName);
+    const chartResult = await generateChartData(content, useOpenAI, industry, companyName);
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
       content: data.content,

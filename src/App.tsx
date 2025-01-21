@@ -53,7 +53,6 @@ const generateAISuggestionsResponse = async (
   ]
   if (useOpenAI) {
     console.log('OpenAI for suggestions');
-    const apiKey = env.OPENAI_API_KEY;
     const messages = [
       {
         role: 'system' as const,
@@ -121,7 +120,8 @@ const generateChartData = async (
     const messages = [
       {
         role: 'system' as const,
-        content: `We have a TypeScript interface ChartData. 
+        content: `You are a helpful assistant in market research, an expert in brand sentiment analysis.
+        We have a TypeScript interface ChartData. 
         You will help us produce credible chart data for a bar chart with  up to 10 labels corresponding to the user query that is going to be passed by the user. 
         Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
         Generate fictional but believable data. Strongly prefer to use real brand names rather than made-up or generic ones like "Brand A", "Brand B".
@@ -188,7 +188,9 @@ const determineChatTopic = async (
     const messages = [
       {
         role: 'system' as const,
-        content: 'You are a helpful assistant. Return a JSON object with property "topic" containing the conversation topic as a string.'
+        content: `You are a helpful assistant in market research, an expert in brand sentiment analysis. 
+        You will suggest an appropriate topic to name the conversation you are having with the user depending on the User query, and if passed, the industry and company name they belong to.
+        A topic is a short phrase that summarizes the main subject of the conversation.`
       },
       {
         role: 'user' as const,
@@ -209,11 +211,14 @@ const determineChatTopic = async (
       messages: [
         {
           role: 'system',
-          content: 'You are asked to return a JSON object with a single property "topic".'
+          content: `You are a helpful assistant in market research, an expert in brand sentiment analysis. 
+          You are asked to return a JSON object with a single property "topic".`
         },
         {
           role: 'user',
-          content: `Please determine the topic of the conversation based on the user query: "${userQuery}", industry: "${industry}", and company name: "${companyName}". Return JSON with the single property "topic".`
+          content: `Please determine the topic of the conversation based on the user query: "${userQuery}", 
+          industry: "${industry}", and company name: "${companyName}". 
+          Return JSON with the single property "topic".`
         }
       ]
     });

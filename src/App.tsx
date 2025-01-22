@@ -106,7 +106,8 @@ const generateAISuggestionsResponse = async (
   userQuery: string,
   useOpenAI: boolean,
   industry?: string,
-  companyName?: string
+  companyName?: string,
+  useO1ForSuggestions?: boolean
 ) => {
   const example_suggestions = [
     "Show me the top car brands by awareness.",
@@ -114,7 +115,32 @@ const generateAISuggestionsResponse = async (
     "What are the most trusted smartphone brands globally?",
     "Which fitness app is preferred by Gen Z users?",
   ]
-  if (useOpenAI) {
+  if (useO1ForSuggestions) {
+    console.log("Using o1-mini-2024-09-12 for suggestions");
+    const messages = [
+      {
+        role: 'user' as const,
+        content: `Instructions:
+        
+        ${main_system_prompt}
+        You are going to give suggestions for follow up prompts to the user based on the user query, industry, and company name.
+        The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
+        Don't instruct the user on what to think, only suggest a short phrase they might say next.
+
+        Examples: ${example_suggestions.join(', ')}.
+        
+        User query: "${userQuery}"${
+          industry ? `, Industry: "${industry}"` : ''
+        }${companyName ? `, Company name: "${companyName}"` : ''}.`
+      }
+    ];
+    const response = await openai.beta.chat.completions.parse({
+      model: "o1-mini-2024-09-12",
+      messages,
+      response_format: zodResponseFormat(ContentSuggestions, "suggestions"),
+    });
+    return response.choices[0].message.parsed;
+  } else if (useOpenAI) {
     console.log('OpenAI for suggestions');
     const messages = [
       {
@@ -132,8 +158,6 @@ const generateAISuggestionsResponse = async (
         }${companyName ? `, company name: "${companyName}"` : ''}.`
       }
     ];
-
-
     const response = await openai.beta.chat.completions.parse({
       model: "gpt-4o-2024-08-06",
       messages: messages,
@@ -294,6 +318,7 @@ export default function App() {
   const [industry, setIndustry] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [useOpenAI, setUseOpenAI] = useState(false);
+  const [useO1ForSuggestions, setUseO1ForSuggestions] = useState(false); 
 
   const createInitialMessage = (ind?: string, comp?: string): Message => ({
     id: '1',
@@ -409,9 +434,17 @@ export default function App() {
               className="h-4 w-4 text-blue-600 border-gray-300 rounded"
             />
           </div>
+          <div className="mt-4 flex items-center">
+            <label className="block text-sm font-medium text-gray-700 mr-2">Use o1 for suggestions</label>
+            <input
+              type="checkbox"
+              checked={useO1ForSuggestions}
+              onChange={(e) => setUseO1ForSuggestions(e.target.checked)}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+            />  
+          </div>
         </div>
       </div>
-
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Chat Messages */}

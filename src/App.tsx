@@ -10,6 +10,11 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
+const defaultSuggestions = [
+  "Show me the top car brands by awareness.",
+  "Which coffee shops are most popular with millennials?"
+];
+
 const main_system_prompt = `You are a helpful assistant in market research, an expert in brand sentiment analysis.
 Your mission is to: Enable users to uncover non-obvious patterns in sentiment data through AI-guided exploration that adapts based on their context and previous discoveries.
 Your Dataset is a collection of brand sentiment and audience data.
@@ -87,6 +92,10 @@ const ChatTopicSchema = z.object({
   topic: z.string()
 });
 
+const ChartTypeSchema = z.object({
+  chartType: z.string()
+});
+
 const ChartDataSchema = z.object({
   labels: z.array(z.string()),
   title: z.string(),
@@ -97,6 +106,20 @@ const ChartDataSchema = z.object({
     data: z.array(z.number()),
     backgroundColor: z.array(z.string()),
     borderColor: z.array(z.string()),
+    borderWidth: z.number()
+  }))
+});
+
+const TimeSeriesDataSchema = z.object({
+  labels: z.array(z.string()),
+  title: z.string(),
+  dateRange: z.string(),
+  demographic: z.string(),
+  datasets: z.array(z.object({
+    label: z.string(),
+    data: z.array(z.number()),
+    backgroundColor: z.string(),
+    borderColor: z.string(),
     borderWidth: z.number()
   }))
 });
@@ -192,14 +215,14 @@ const generateAISuggestionsResponse = async (
   }
 };
 
-const generateChartData = async (
+const generateBarChartData = async (
   userQuery: string,
   useOpenAI: boolean,
   industry?: string,
   companyName?: string
 ) => {
   if (useOpenAI) {
-    console.log('OpenAI for chart data');
+    console.log('OpenAI for bar chart data');
     const messages = [
       {
         role: 'system' as const,
@@ -247,6 +270,70 @@ const generateChartData = async (
 Please produce "chartData" strictly matching that shape for a bar chart with up to 10 labels each corresponding to a brand
 Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
 Include title, dateRange, demographic. Generate fictional but believable data. 
+User query: "${userQuery}"${
+  industry ? `, industry: "${industry}"` : ''
+}${companyName ? `, company name: "${companyName}"` : ''}.`
+        }
+      ]
+    });
+    const parsed = JSON.parse(resp.message.content);
+    return parsed;
+  }
+};
+
+const generateTimeSeriesData = async (
+  userQuery: string,
+  useOpenAI: boolean,
+  industry?: string,
+  companyName?: string
+) => {
+  if (useOpenAI) {
+    console.log('OpenAI for time series data');
+    const messages = [
+      {
+        role: 'system' as const,
+        content: `${main_system_prompt}
+        We have a TypeScript interface TimeSeriesData with strict shape requirements. 
+        Return a plausible time-series dataset. 
+        Strongly prefer real brand names to generic ones.`
+      },
+      {
+        role: 'user' as const,
+        content: `User query: "${userQuery}"${
+          industry ? `, industry: "${industry}"` : ''
+        }${companyName ? `, company name: "${companyName}"` : ''}.`
+      }
+    ];
+    const response = await openai.beta.chat.completions.parse({
+      model: "gpt-4o-2024-08-06",
+      messages,
+      response_format: zodResponseFormat(TimeSeriesDataSchema, "chartData"),
+    });
+    return response.choices[0].message.parsed;
+  } else {
+    console.log('Llama for time series data');
+    const resp = await ollama.chat({
+      model: 'llama3.1',
+      format: 'json',
+      messages: [
+        {
+          role: 'user',
+          content: `We have a TypeScript interface TimeSeriesData with this shape:
+{
+  labels: string[];
+  title: string;
+  dateRange: string;
+  demographic: string;
+  datasets: [{
+    label: string;
+    data: number[];
+    backgroundColor: string;
+    borderColor: string;
+    borderWidth: number;
+  }]
+}.
+Please produce "chartData" strictly matching that shape for a time series chart.
+Include title, dateRange, demographic. Generate fictional but believable data.
 User query: "${userQuery}"${
   industry ? `, industry: "${industry}"` : ''
 }${companyName ? `, company name: "${companyName}"` : ''}.`
@@ -309,10 +396,59 @@ const determineChatTopic = async (
   }
 };
 
-const defaultSuggestions = [
-  "Show me the top car brands by awareness.",
-  "Which coffee shops are most popular with millennials?"
-];
+const determineChartType = async (
+  userQuery: string,
+  industry: string,
+  companyName: string,
+  useOpenAI: boolean
+) => {
+  if (useOpenAI) {
+    console.log('OpenAI for chart type');
+    // Use OpenAI
+    const messages = [
+      {
+        role: 'system' as const,
+        content: `${main_system_prompt}
+        You will suggest a chart type based on the user query, industry, and company name.
+        The only options you have are "Bar chart" or "Time series chart".`
+      },
+      {
+        role: 'user' as const,
+        content: `User query: "${userQuery}", industry: "${industry}", company name: "${companyName}".`
+      }
+    ];
+    const response = await openai.beta.chat.completions.parse({
+      model: 'gpt-4o-2024-08-06',
+      messages: messages,
+      response_format: zodResponseFormat(ChartTypeSchema, 'chartType'),
+    });
+    return response.choices[0].message.parsed.chartType;
+  } else {
+    console.log('Llama for chart type');
+    const response = await ollama.chat({
+      model: 'llama3.1',
+      format: 'json',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a helpful assistant in market research, an expert in brand sentiment analysis. 
+          You are asked to return a JSON object with a single property "chartType".
+          The only options you have are "Bar chart" or "Time series chart".`
+        },
+        {
+          role: 'user',
+          content: `Please determine the chart type based on the user query: "${userQuery}", 
+          industry: "${industry}", and company name: "${companyName}". 
+          Return JSON with the single property "chartType".`
+        }
+      ]
+    });
+    const data = await response;
+    const json_data = JSON.parse(data.message.content);
+    return json_data.chartType;
+  }
+};
+
 
 export default function App() {
   const [industry, setIndustry] = useState('');
@@ -347,7 +483,9 @@ export default function App() {
 
     setLoading(true);
     const data = await generateAISuggestionsResponse(content, useOpenAI, industry, companyName);
-    const chartResult = await generateChartData(content, useOpenAI, industry, companyName);
+    const chartType = await determineChartType(content, industry, companyName, useOpenAI);
+    console.log('Chart type:', chartType);
+    const chartResult = await generateBarChartData(content, useOpenAI, industry, companyName);
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
       content: data.content,

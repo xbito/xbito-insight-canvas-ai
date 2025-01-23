@@ -147,6 +147,7 @@ const generateAISuggestionsResponse = async (
         
         ${main_system_prompt}
         You are going to give suggestions for follow up prompts to the user based on the user query, industry, and company name.
+        They must be possible to answer with either bar graphs or time series graphs.
         The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
         Don't instruct the user on what to think, only suggest a short phrase they might say next.
 
@@ -170,7 +171,7 @@ const generateAISuggestionsResponse = async (
         role: 'system' as const,
         content: `${main_system_prompt}
         The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
-        They must be possible to answer with bar graphs.
+        They must be possible to answer with either bar graphs or time series graphs.
         Don't instruct the user on what to think, only suggest a short phrase they might say next.
         Here are some example suggestions: ${example_suggestions.join(', ')}.`
       },
@@ -199,7 +200,14 @@ const generateAISuggestionsResponse = async (
       messages :[
         {
           role: 'user',
-          content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. The suggestions should be phrased as if the user was the one that is going to send that message. Don't instruct the user on what to think about next, rather exactly suggest what phrase he may use as a response/follow up. The suggestions should aim to generate more graphs to analyze brand sentiment and audience data and create visualizations. Here general example suggestions: ${example_suggestions.join(', ')}. User query: "${userQuery}"${
+          content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. 
+          The suggestions should be phrased as if the user was the one that is going to send that message. 
+          Don't instruct the user on what to think about next, rather exactly suggest what phrase he may use as a response/follow up. 
+          The suggestions should aim to generate more graphs to analyze brand sentiment and audience data and create visualizations.
+          They must be possible to answer with either bar graphs or time series graphs.
+          Here general example suggestions: ${example_suggestions.join(', ')}. 
+          
+          User query: "${userQuery}"${
             industry ? `, industry: "${industry}"` : ''
           }${companyName ? `, company: "${companyName}"` : ''}.`
         }
@@ -485,7 +493,14 @@ export default function App() {
     const data = await generateAISuggestionsResponse(content, useOpenAI, industry, companyName);
     const chartType = await determineChartType(content, industry, companyName, useOpenAI);
     console.log('Chart type:', chartType);
-    const chartResult = await generateBarChartData(content, useOpenAI, industry, companyName);
+
+    let chartResult;
+    if (chartType === "Time series chart") {
+      chartResult = await generateTimeSeriesData(content, useOpenAI, industry, companyName);
+    } else {
+      chartResult = await generateBarChartData(content, useOpenAI, industry, companyName);
+    }
+
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
       content: data.content,

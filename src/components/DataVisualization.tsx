@@ -6,15 +6,19 @@ import {
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  PointElement,
+  LineElement
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import { ChartData } from '../types';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend
@@ -58,6 +62,69 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
     }
   };
 
+  const isBarChart = Array.isArray(data.datasets?.[0]?.backgroundColor);
+
+  let chartJsData;
+  if (isBarChart) {
+    chartJsData = {
+      labels: data.labels,
+      datasets: data.datasets.map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        backgroundColor: ds.backgroundColor,
+        borderColor: ds.borderColor,
+        borderWidth: ds.borderWidth
+      }))
+    };
+  } else {
+    chartJsData = {
+      labels: data.labels,
+      datasets: data.datasets.map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        backgroundColor: ds.backgroundColor,
+        borderColor: ds.borderColor,
+        borderWidth: ds.borderWidth,
+        fill: false
+      }))
+    };
+  }
+
+  const chartOptions = {
+    responsive: true,
+    indexAxis: isBarChart ? 'y' : 'x',
+    plugins: {
+      legend: {
+        display: false,
+      },
+      title: {
+        display: false,
+      },
+    },
+    scales: {
+      x: isBarChart
+        ? {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              callback: function(value: any) {
+                return value + '%';
+              }
+            }
+          }
+        : {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+      y: {
+        beginAtZero: true
+      }
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="space-y-4 mb-6">
@@ -73,8 +140,21 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
           </div>
         </div>
       </div>
-      <Bar options={options} data={data} className="max-h-[500px]" />
-      
+      {isBarChart ? (
+        <Bar
+          key="barChart"
+          options={chartOptions}
+          data={chartJsData}
+          className="max-h-[500px]"
+        />
+      ) : (
+        <Line
+          key="lineChart"
+          options={chartOptions}
+          data={chartJsData}
+          className="max-h-[500px]"
+        />
+      )}
     </div>
   );
 };

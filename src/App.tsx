@@ -153,9 +153,9 @@ const generateAISuggestionsResponse = async (
 
         Examples: ${example_suggestions.join(', ')}.
         
-        User query: "${userQuery}"${
-          industry ? `, Industry: "${industry}"` : ''
-        }${companyName ? `, Company name: "${companyName}"` : ''}.`
+        Industry: "${industry}"${
+          companyName ? `, Company name: "${companyName}"` : ''
+        }${userQuery ? `, User query: "${userQuery}"` : ''}.`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -177,9 +177,9 @@ const generateAISuggestionsResponse = async (
       },
       {
         role: 'user' as const,
-        content: `User query: "${userQuery}"${
-          industry ? `, industry: "${industry}"` : ''
-        }${companyName ? `, company name: "${companyName}"` : ''}.`
+        content: `Industry: "${industry}"${
+          companyName ? `, company name: "${companyName}"` : ''
+        }${userQuery ? `, user query: "${userQuery}"` : ''}.`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -207,9 +207,9 @@ const generateAISuggestionsResponse = async (
           They must be possible to answer with either bar graphs or time series graphs.
           Here general example suggestions: ${example_suggestions.join(', ')}. 
           
-          User query: "${userQuery}"${
-            industry ? `, industry: "${industry}"` : ''
-          }${companyName ? `, company: "${companyName}"` : ''}.`
+          Industry: "${industry}"${
+            companyName ? `, company: "${companyName}"` : ''
+          }${userQuery ? `, user query: "${userQuery}"` : ''}.`
         }
       ]
     });
@@ -242,9 +242,9 @@ const generateBarChartData = async (
       },
       {
         role: 'user' as const,
-        content: `User query: "${userQuery}"${
-          industry ? `, industry: "${industry}"` : ''
-        }${companyName ? `, company name: "${companyName}"` : ''}.`
+        content: `Industry: "${industry}"${
+          companyName ? `, company name: "${companyName}"` : ''
+        }${userQuery ? `, user query: "${userQuery}"` : ''}.`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -278,9 +278,9 @@ const generateBarChartData = async (
 Please produce "chartData" strictly matching that shape for a bar chart with up to 10 labels each corresponding to a brand
 Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
 Include title, dateRange, demographic. Generate fictional but believable data. 
-User query: "${userQuery}"${
-  industry ? `, industry: "${industry}"` : ''
-}${companyName ? `, company name: "${companyName}"` : ''}.`
+Industry: "${industry}"${
+  companyName ? `, company name: "${companyName}"` : ''
+}${userQuery ? `, user query: "${userQuery}"` : ''}.`
         }
       ]
     });
@@ -307,9 +307,9 @@ const generateTimeSeriesData = async (
       },
       {
         role: 'user' as const,
-        content: `User query: "${userQuery}"${
-          industry ? `, industry: "${industry}"` : ''
-        }${companyName ? `, company name: "${companyName}"` : ''}.`
+        content: `Industry: "${industry}"${
+          companyName ? `, company name: "${companyName}"` : ''
+        }${userQuery ? `, user query: "${userQuery}"` : ''}.`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -342,9 +342,9 @@ const generateTimeSeriesData = async (
 }.
 Please produce "chartData" strictly matching that shape for a time series chart.
 Include title, dateRange, demographic. Generate fictional but believable data.
-User query: "${userQuery}"${
-  industry ? `, industry: "${industry}"` : ''
-}${companyName ? `, company name: "${companyName}"` : ''}.`
+Industry: "${industry}"${
+  companyName ? `, company name: "${companyName}"` : ''
+}${userQuery ? `, user query: "${userQuery}"` : ''}.`
         }
       ]
     });
@@ -370,7 +370,7 @@ const determineChatTopic = async (
       },
       {
         role: 'user' as const,
-        content: `User query: "${userQuery}", industry: "${industry}", company name: "${companyName}".`
+        content: `Industry: "${industry}", company name: "${companyName}", user query: "${userQuery}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -422,7 +422,7 @@ const determineChartType = async (
       },
       {
         role: 'user' as const,
-        content: `User query: "${userQuery}", industry: "${industry}", company name: "${companyName}".`
+        content: `Industry: "${industry}", company name: "${companyName}", user query: "${userQuery}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -445,9 +445,7 @@ const determineChartType = async (
         },
         {
           role: 'user',
-          content: `Please determine the chart type based on the user query: "${userQuery}", 
-          industry: "${industry}", and company name: "${companyName}". 
-          Return JSON with the single property "chartType".`
+          content: `Industry: "${industry}", company name: "${companyName}", user query: "${userQuery}".`
         }
       ]
     });

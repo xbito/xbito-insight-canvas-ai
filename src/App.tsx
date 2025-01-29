@@ -17,7 +17,10 @@ const defaultSuggestions = [
 
 const main_system_prompt = `You are a helpful assistant in market research, an expert in brand sentiment analysis.
 Your mission is to: Enable users to uncover non-obvious patterns in sentiment data through AI-guided exploration that adapts based on their context and previous discoveries.
+
 Your Dataset is a collection of brand sentiment and audience data.
+Your data ranges from 2010 to January 2025.
+
 You have the following data about respondents:
 age
 gender
@@ -69,13 +72,23 @@ You have the following daily data about brand sentiment:
 date (the day of data collection)
 respondent_id (FK to Respondent)
 brand_id (FK to Brand)
-sentiment_score (numeric)
-awareness_score (numeric)
-loyalty_score (numeric)
-purchase_intent_score (numeric)
-other_scores (if any extra metrics come up)
-
-Your data ranges from 2010 to January 2025.
+awareness_score (numeric) - have you ever heard of this brand?
+buzz_score (numeric) - have you recently heard anything positive/negative about this brand?
+current_customer (boolean) - are you currently a customer of this brand?
+ever_customer (boolean) - have you ever been a customer of this brand?
+consideration_score (numeric) - would you consider this brand for a future purchase?
+intent_score (numeric) - do you intend to purchase from this brand in the near future?
+word_of_mouth_score (numeric) - have you talked about this brand with friends/family?
+advertising_score (numeric) - have you seen any advertising for this brand recently?
+quality_score (good/bad/neutral) - how would you rate the quality of this brand's products/services?
+value_score (good/bad/neutral) - how would you rate the value for money of this brand's products/services?
+satisfaction_score (good/bad/neutral) - how satisfied are you with this brand overall?
+recommendation_score (good/bad/neutral) - how likely are you to recommend this brand to others?
+reputation_score (numeric) - would you be proud to work for this brand in the future?
+impression (positive/negative/neutral) - what is your overall impression of this brand?
+trust_score (numeric) - how much do you trust this brand?
+loyalty_score (numeric) - how loyal are you to this brand?
+engagement_score (numeric) - how engaged are you with this brand?
 `
 
 const openai = new OpenAI({

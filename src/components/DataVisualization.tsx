@@ -95,7 +95,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
     indexAxis: isBarChart ? 'y' : 'x',
     plugins: {
       legend: {
-        display: false,
+        display: !isBarChart,
       },
       title: {
         display: false,

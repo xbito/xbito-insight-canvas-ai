@@ -8,7 +8,15 @@ import { getInitialSuggestions } from './initialSuggestions';
 import { env } from './config/env';
 import OpenAI from 'openai';
 import { zodResponseFormat } from "openai/helpers/zod";
-import { z } from "zod";
+import { z } from 'zod';
+
+import {
+  ContentSuggestions,
+  ChatTopicSchema,
+  ChartTypeSchema,
+  ChartDataSchema,
+  TimeSeriesDataSchema
+} from './types';
 
 const defaultSuggestions = [
   "Show me the top car brands by awareness.",
@@ -96,47 +104,6 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
-const ContentSuggestions = z.object({
-  content: z.string(),
-  suggestions: z.array(z.string())
-});
-
-const ChatTopicSchema = z.object({
-  topic: z.string()
-});
-
-const ChartTypeSchema = z.object({
-  chartType: z.string()
-});
-
-const ChartDataSchema = z.object({
-  labels: z.array(z.string()),
-  title: z.string(),
-  dateRange: z.string(),
-  demographic: z.string(),
-  datasets: z.array(z.object({
-    label: z.string(),
-    data: z.array(z.number()),
-    backgroundColor: z.array(z.string()),
-    borderColor: z.array(z.string()),
-    borderWidth: z.number()
-  }))
-});
-
-const TimeSeriesDataSchema = z.object({
-  labels: z.array(z.string()),
-  title: z.string(),
-  dateRange: z.string(),
-  demographic: z.string(),
-  datasets: z.array(z.object({
-    label: z.string(),
-    data: z.array(z.number()),
-    backgroundColor: z.string(),
-    borderColor: z.string(),
-    borderWidth: z.number()
-  }))
-});
-
 function buildIndustryCompanyText(industry: string, companyName: string) {
   let text = '';
   if (industry) {
@@ -170,15 +137,16 @@ const generateAISuggestionsResponse = async (
       {
         role: 'user' as const,
         content: `Instructions:
-        
         ${main_system_prompt}
 
         You are going to give suggestions for follow up prompts to the user based on the user query, industry, and company name.
         They must be possible to answer with either bar graphs or time series graphs.
         The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
         Don't instruct the user on what to think, only suggest a short phrase they might say next.
+        In the suggestions never make a reference to "these brands", the follow up prompts do not have the necessary context to make that reference.
+        Return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings.
 
-        Examples: ${example_suggestions.join(', ')}.
+        Example suggestions: ${example_suggestions.join(', ')}.
           
         ${formattedInfo}
         The entire user conversation (for context):
@@ -187,12 +155,29 @@ const generateAISuggestionsResponse = async (
         The last user query is: "${latestUserQuery}".`
       }
     ];
-    const response = await openai.beta.chat.completions.parse({
+    const firstResponse = await openai.chat.completions.create({
       model: "o1-mini-2024-09-12",
-      messages,
+      messages
+    });
+    const rawContent = firstResponse.choices[0].message.content;
+    // Now chain-call GPT-4o-mini to parse the raw text into the zod schema
+    const parseMessages = [
+      {
+        role: 'system' as const,
+        content: `You are a helpful assistant. Convert the user message into valid JSON matching:
+        { content: string; suggestions: string[] }`
+      },
+      {
+        role: 'user' as const,
+        content: rawContent
+      }
+    ];
+    const secondResponse = await openai.beta.chat.completions.parse({
+      model: "gpt-4o-mini",
+      messages: parseMessages,
       response_format: zodResponseFormat(ContentSuggestions, "suggestions"),
     });
-    return response.choices[0].message.parsed;
+    return secondResponse.choices[0].message.parsed;
   } else if (useOpenAI) {
     console.log('OpenAI for suggestions');
     const messages = [
@@ -271,7 +256,9 @@ const generateBarChartData = async (
         We have a TypeScript interface ChartData with strict shape requirements. 
         Return a plausible bar-chart dataset with up to 10 labels reflecting the user query. 
         Each label's data field is a percentage (0-100). 
-        Strongly prefer real brand names to generic ones.`
+        Strongly prefer real brand names to generic ones.
+        Never make up brand names.
+        Never return "Brand A", "Brand B", etc.`
       },
       {
         role: 'user' as const,

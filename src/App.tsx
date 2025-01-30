@@ -139,11 +139,12 @@ const TimeSeriesDataSchema = z.object({
 
 // Simulated AI response generator
 const generateAISuggestionsResponse = async (
-  userQuery: string,
+  latestUserQuery: string,
   useOpenAI: boolean,
   industry?: string,
   companyName?: string,
-  useO1ForSuggestions?: boolean
+  useO1ForSuggestions?: boolean,
+  allUserQueries?: string
 ) => {
   const example_suggestions = [
     "Show me the top car brands by awareness.",
@@ -159,16 +160,22 @@ const generateAISuggestionsResponse = async (
         content: `Instructions:
         
         ${main_system_prompt}
+
         You are going to give suggestions for follow up prompts to the user based on the user query, industry, and company name.
         They must be possible to answer with either bar graphs or time series graphs.
         The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
         Don't instruct the user on what to think, only suggest a short phrase they might say next.
 
         Examples: ${example_suggestions.join(', ')}.
+
+        This is the entire user conversation so far (for context):
+        ${allUserQueries}
+
+        The last user query is: "${latestUserQuery}"
         
         Industry: "${industry}"${
           companyName ? `, Company name: "${companyName}"` : ''
-        }${userQuery ? `, User query: "${userQuery}"` : ''}.`
+        }${latestUserQuery ? `, User query: "${latestUserQuery}"` : ''}.`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -190,9 +197,12 @@ const generateAISuggestionsResponse = async (
       },
       {
         role: 'user' as const,
-        content: `Industry: "${industry}"${
+        content: `Here is the entire user conversation (for context):
+        ${allUserQueries}
+
+        Industry: "${industry}"${
           companyName ? `, company name: "${companyName}"` : ''
-        }${userQuery ? `, user query: "${userQuery}"` : ''}.`
+        }${latestUserQuery ? `, user query: "${latestUserQuery}"` : ''}.`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -219,9 +229,11 @@ const generateAISuggestionsResponse = async (
           They must be possible to answer with either bar graphs or time series graphs.
           Here general example suggestions: ${example_suggestions.join(', ')}. 
           
+          Full conversation (for context):
+          ${allUserQueries}
           Industry: "${industry}"${
             companyName ? `, company: "${companyName}"` : ''
-          }${userQuery ? `, user query: "${userQuery}"` : ''}.`
+          }${latestUserQuery ? `, user query: "${latestUserQuery}"` : ''}.`
         }
       ]
     });
@@ -500,7 +512,20 @@ export default function App() {
     setMessages(prev => [...prev, userMessage]);
 
     setLoading(true);
-    const data = await generateAISuggestionsResponse(content, useOpenAI, industry, companyName);
+    const allUserQueries = messages
+      .filter(m => m.sender === 'user')
+      .map((m, index) => `Query ${index + 1}: ${m.content}`)
+      .join('\n');
+    const updatedAllUserQueries = `${allUserQueries}\nQuery ${messages.filter(m => m.sender === 'user').length + 1}: ${content}`;
+
+    const data = await generateAISuggestionsResponse(
+      content,
+      useOpenAI,
+      industry,
+      companyName,
+      useO1ForSuggestions,
+      updatedAllUserQueries
+    );
     const chartType = await determineChartType(content, industry, companyName, useOpenAI);
     console.log('Chart type:', chartType);
 
@@ -520,13 +545,6 @@ export default function App() {
       chartData: chartResult
     };
     setMessages(prev => [...prev, aiMessage]);
-
-    const allUserQueries = messages
-      .filter(m => m.sender === 'user')
-      .map((m, index) => `Query ${index + 1}: ${m.content}`)
-      .join('\n');
-
-    const updatedAllUserQueries = `${allUserQueries}\nQuery ${messages.filter(m => m.sender === 'user').length + 1}: ${content}`;
 
     const topic = await determineChatTopic(updatedAllUserQueries, industry, companyName, useOpenAI);
     setChatTitle(topic);

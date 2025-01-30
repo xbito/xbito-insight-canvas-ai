@@ -137,6 +137,17 @@ const TimeSeriesDataSchema = z.object({
   }))
 });
 
+function buildIndustryCompanyText(industry: string, companyName: string) {
+  let text = '';
+  if (industry) {
+    text += `Industry: "${industry}". `;
+  }
+  if (companyName) {
+    text += `Company name: "${companyName}". `;
+  }
+  return text.trim();
+}
+
 // Simulated AI response generator
 const generateAISuggestionsResponse = async (
   latestUserQuery: string,
@@ -152,6 +163,7 @@ const generateAISuggestionsResponse = async (
     "What are the most trusted smartphone brands globally?",
     "Which fitness app is preferred by Gen Z users?",
   ]
+  const formattedInfo = buildIndustryCompanyText(industry || '', companyName || '');
   if (useO1ForSuggestions) {
     console.log("o1-mini-2024-09-12 for suggestions");
     const messages = [
@@ -167,15 +179,12 @@ const generateAISuggestionsResponse = async (
         Don't instruct the user on what to think, only suggest a short phrase they might say next.
 
         Examples: ${example_suggestions.join(', ')}.
-
-        This is the entire user conversation so far (for context):
+          
+        ${formattedInfo}
+        The entire user conversation (for context):
         ${allUserQueries}
 
-        The last user query is: "${latestUserQuery}"
-        
-        Industry: "${industry}"${
-          companyName ? `, Company name: "${companyName}"` : ''
-        }${latestUserQuery ? `, User query: "${latestUserQuery}"` : ''}.`
+        The last user query is: "${latestUserQuery}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -197,12 +206,11 @@ const generateAISuggestionsResponse = async (
       },
       {
         role: 'user' as const,
-        content: `Here is the entire user conversation (for context):
+        content: `${formattedInfo}
+        Here is the entire user conversation (for context):
         ${allUserQueries}
-
-        Industry: "${industry}"${
-          companyName ? `, company name: "${companyName}"` : ''
-        }${latestUserQuery ? `, user query: "${latestUserQuery}"` : ''}.`
+       
+        The last user query is: "${latestUserQuery}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -229,11 +237,11 @@ const generateAISuggestionsResponse = async (
           They must be possible to answer with either bar graphs or time series graphs.
           Here general example suggestions: ${example_suggestions.join(', ')}. 
           
+          ${formattedInfo}
           Full conversation (for context):
           ${allUserQueries}
-          Industry: "${industry}"${
-            companyName ? `, company: "${companyName}"` : ''
-          }${latestUserQuery ? `, user query: "${latestUserQuery}"` : ''}.`
+          
+          The last user query is: "${latestUserQuery}".`
         }
       ]
     });
@@ -253,6 +261,7 @@ const generateBarChartData = async (
   industry?: string,
   companyName?: string
 ) => {
+  const formattedInfo = buildIndustryCompanyText(industry || '', companyName || '');
   if (useOpenAI) {
     console.log('OpenAI for bar chart data');
     const messages = [
@@ -266,9 +275,8 @@ const generateBarChartData = async (
       },
       {
         role: 'user' as const,
-        content: `Industry: "${industry}"${
-          companyName ? `, company name: "${companyName}"` : ''
-        }${userQuery ? `, user query: "${userQuery}"` : ''}.`
+        content: `${formattedInfo}
+        The last user query is: "${userQuery}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -302,9 +310,8 @@ const generateBarChartData = async (
 Please produce "chartData" strictly matching that shape for a bar chart with up to 10 labels each corresponding to a brand
 Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
 Include title, dateRange, demographic. Generate fictional but believable data. 
-Industry: "${industry}"${
-  companyName ? `, company name: "${companyName}"` : ''
-}${userQuery ? `, user query: "${userQuery}"` : ''}.`
+${formattedInfo}
+The last user query is: "${userQuery}".`
         }
       ]
     });
@@ -319,6 +326,7 @@ const generateTimeSeriesData = async (
   industry?: string,
   companyName?: string
 ) => {
+  const formattedInfo = buildIndustryCompanyText(industry || '', companyName || '');
   if (useOpenAI) {
     console.log('OpenAI for time series data');
     const messages = [
@@ -331,9 +339,8 @@ const generateTimeSeriesData = async (
       },
       {
         role: 'user' as const,
-        content: `Industry: "${industry}"${
-          companyName ? `, company name: "${companyName}"` : ''
-        }${userQuery ? `, user query: "${userQuery}"` : ''}.`
+        content: `${formattedInfo}
+        The last user query is: "${userQuery}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -366,9 +373,8 @@ const generateTimeSeriesData = async (
 }.
 Please produce "chartData" strictly matching that shape for a time series chart.
 Include title, dateRange, demographic. Generate fictional but believable data.
-Industry: "${industry}"${
-  companyName ? `, company name: "${companyName}"` : ''
-}${userQuery ? `, user query: "${userQuery}"` : ''}.`
+${formattedInfo}
+The last user query is: "${userQuery}".`
         }
       ]
     });
@@ -383,6 +389,7 @@ const determineChatTopic = async (
   companyName: string,
   useOpenAI: boolean
 ) => {
+  const formattedInfo = buildIndustryCompanyText(industry, companyName);
   if (useOpenAI) {
     console.log('OpenAI for topic');
     // Use OpenAI
@@ -394,7 +401,7 @@ const determineChatTopic = async (
       },
       {
         role: 'user' as const,
-        content: `Industry: "${industry}", company name: "${companyName}", user query: "${allUserMessages}".`
+        content: `${formattedInfo}User conversation: "${allUserMessages}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -416,9 +423,8 @@ const determineChatTopic = async (
         },
         {
           role: 'user',
-          content: `Please determine the topic of the conversation based on the user query: "${allUserMessages}", 
-          industry: "${industry}", and company name: "${companyName}". 
-          Return JSON with the single property "topic".`
+          content: `${formattedInfo}
+          Please determine the topic of the conversation based on the user query: "${allUserMessages}", and return it in JSON format.`
         }
       ]
     });
@@ -434,6 +440,7 @@ const determineChartType = async (
   companyName: string,
   useOpenAI: boolean
 ) => {
+  const formattedInfo = buildIndustryCompanyText(industry, companyName);
   if (useOpenAI) {
     console.log('OpenAI for chart type');
     // Use OpenAI
@@ -446,7 +453,7 @@ const determineChartType = async (
       },
       {
         role: 'user' as const,
-        content: `Industry: "${industry}", company name: "${companyName}", user query: "${userQuery}".`
+        content: `${formattedInfo}User query: "${userQuery}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -469,7 +476,8 @@ const determineChartType = async (
         },
         {
           role: 'user',
-          content: `Industry: "${industry}", company name: "${companyName}", user query: "${userQuery}".`
+          content: `${formattedInfo}
+          The last user query is: "${userQuery}".`
         }
       ]
     });

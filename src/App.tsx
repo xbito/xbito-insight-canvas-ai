@@ -152,7 +152,7 @@ const generateAISuggestionsResponse = async (
     "Which fitness app is preferred by Gen Z users?",
   ]
   if (useO1ForSuggestions) {
-    console.log("Using o1-mini-2024-09-12 for suggestions");
+    console.log("o1-mini-2024-09-12 for suggestions");
     const messages = [
       {
         role: 'user' as const,
@@ -201,7 +201,6 @@ const generateAISuggestionsResponse = async (
       response_format: zodResponseFormat(ContentSuggestions, "suggestions"),
     });
     const { content, suggestions } = response.choices[0].message.parsed;
-    console.log('OpenAI response:', content, suggestions);
     // return in json format
     return { content, suggestions };
   } else {

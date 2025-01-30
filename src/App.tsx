@@ -366,7 +366,7 @@ Industry: "${industry}"${
 };
 
 const determineChatTopic = async (
-  userQuery: string,
+  allUserMessages: string,
   industry: string,
   companyName: string,
   useOpenAI: boolean
@@ -378,11 +378,11 @@ const determineChatTopic = async (
       {
         role: 'system' as const,
         content: `${main_system_prompt}
-        You will suggest a short topic that summarizes the conversation based on the user query, industry, and company name.`
+        You will suggest a short topic of 5 words summarizing the entire user conversation so it can be displayed in the chat tab.`
       },
       {
         role: 'user' as const,
-        content: `Industry: "${industry}", company name: "${companyName}", user query: "${userQuery}".`
+        content: `Industry: "${industry}", company name: "${companyName}", user query: "${allUserMessages}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({
@@ -404,7 +404,7 @@ const determineChatTopic = async (
         },
         {
           role: 'user',
-          content: `Please determine the topic of the conversation based on the user query: "${userQuery}", 
+          content: `Please determine the topic of the conversation based on the user query: "${allUserMessages}", 
           industry: "${industry}", and company name: "${companyName}". 
           Return JSON with the single property "topic".`
         }
@@ -521,7 +521,14 @@ export default function App() {
     };
     setMessages(prev => [...prev, aiMessage]);
 
-    const topic = await determineChatTopic(content, industry, companyName, useOpenAI);
+    const allUserQueries = messages
+      .filter(m => m.sender === 'user')
+      .map((m, index) => `Query ${index + 1}: ${m.content}`)
+      .join('\n');
+
+    const updatedAllUserQueries = `${allUserQueries}\nQuery ${messages.filter(m => m.sender === 'user').length + 1}: ${content}`;
+
+    const topic = await determineChatTopic(updatedAllUserQueries, industry, companyName, useOpenAI);
     setChatTitle(topic);
     setLoading(false);
   };

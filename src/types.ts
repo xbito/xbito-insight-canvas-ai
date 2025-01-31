@@ -24,11 +24,6 @@ export interface ChartData {
   }[];
 }
 
-export const ContentSuggestions = z.object({
-  content: z.string(),
-  suggestions: z.array(z.string())
-});
-
 export const ChatTopicSchema = z.object({
   topic: z.string()
 });
@@ -63,4 +58,18 @@ export const TimeSeriesDataSchema = z.object({
     borderColor: z.string(),
     borderWidth: z.number()
   }))
+});
+
+export const SuggestionsSchema = z.object({
+  suggestions: z.array(z.string())
+});
+
+export const BarChartResponseSchema = z.object({
+  content: z.string(),
+  chartData: ChartDataSchema
+});
+
+export const TimeSeriesResponseSchema = z.object({
+  content: z.string(),
+  chartData: TimeSeriesDataSchema
 });

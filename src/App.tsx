@@ -8,14 +8,13 @@ import { getInitialSuggestions } from './initialSuggestions';
 import { env } from './config/env';
 import OpenAI from 'openai';
 import { zodResponseFormat } from "openai/helpers/zod";
-import { z } from 'zod';
 
 import {
-  ContentSuggestions,
   ChatTopicSchema,
   ChartTypeSchema,
-  ChartDataSchema,
-  TimeSeriesDataSchema
+  SuggestionsSchema,
+  BarChartResponseSchema,
+  TimeSeriesResponseSchema
 } from './types';
 
 const defaultSuggestions = [
@@ -138,21 +137,20 @@ const generateAISuggestionsResponse = async (
         role: 'user' as const,
         content: `Instructions:
         ${main_system_prompt}
-
         You are going to give suggestions for follow up prompts to the user based on the user query, industry, and company name.
         They must be possible to answer with either bar graphs or time series graphs.
         The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
         Don't instruct the user on what to think, only suggest a short phrase they might say next.
         In the suggestions never make a reference to "these brands", the follow up prompts do not have the necessary context to make that reference.
-        Return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings.
-
+        Return a JSON object with "suggestions" as an array of single-sentence follow-ups.
         Example suggestions: ${example_suggestions.join(', ')}.
           
         ${formattedInfo}
         The entire user conversation (for context):
         ${allUserQueries}
 
-        The last user query is: "${latestUserQuery}".`
+        The last user query is: "${latestUserQuery}".
+        `
       }
     ];
     const firstResponse = await openai.chat.completions.create({
@@ -160,12 +158,11 @@ const generateAISuggestionsResponse = async (
       messages
     });
     const rawContent = firstResponse.choices[0].message.content;
-    // Now chain-call GPT-4o-mini to parse the raw text into the zod schema
     const parseMessages = [
       {
         role: 'system' as const,
         content: `You are a helpful assistant. Convert the user message into valid JSON matching:
-        { content: string; suggestions: string[] }`
+        { suggestions: string[] }`
       },
       {
         role: 'user' as const,
@@ -175,9 +172,9 @@ const generateAISuggestionsResponse = async (
     const secondResponse = await openai.beta.chat.completions.parse({
       model: "gpt-4o-mini",
       messages: parseMessages,
-      response_format: zodResponseFormat(ContentSuggestions, "suggestions"),
+      response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
     });
-    return secondResponse.choices[0].message.parsed;
+    return secondResponse.choices[0].message.parsed.suggestions;
   } else if (useOpenAI) {
     console.log('OpenAI for suggestions');
     const messages = [
@@ -201,11 +198,9 @@ const generateAISuggestionsResponse = async (
     const response = await openai.beta.chat.completions.parse({
       model: "gpt-4o-2024-08-06",
       messages: messages,
-      response_format: zodResponseFormat(ContentSuggestions, "suggestions"),
+      response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
     });
-    const { content, suggestions } = response.choices[0].message.parsed;
-    // return in json format
-    return { content, suggestions };
+    return response.choices[0].message.parsed.suggestions;
   } else {
     console.log("Llama for suggestions");
     // Example call to local Llama API
@@ -215,7 +210,7 @@ const generateAISuggestionsResponse = async (
       messages :[
         {
           role: 'user',
-          content: `Please return a JSON object with "content" introducing the chart and "suggestions" as an array of single-sentence suggestions as simple strings. 
+          content: `Please return a JSON object with "suggestions" as an array of single-sentence suggestions as simple strings. 
           The suggestions should be phrased as if the user was the one that is going to send that message. 
           Don't instruct the user on what to think about next, rather exactly suggest what phrase he may use as a response/follow up. 
           The suggestions should aim to generate more graphs to analyze brand sentiment and audience data and create visualizations.
@@ -236,7 +231,7 @@ const generateAISuggestionsResponse = async (
     if (json_data.suggestions && json_data.suggestions.length > 0 && typeof(json_data.suggestions[0]) === 'object') {
       json_data.suggestions = json_data.suggestions.map((suggestion: any) => suggestion.phrase);
     }
-    return json_data;
+    return json_data.suggestions;
   }
 };
 
@@ -254,6 +249,7 @@ const generateBarChartData = async (
         role: 'system' as const,
         content: `${main_system_prompt}
         We have a TypeScript interface ChartData with strict shape requirements. 
+        In the structure you return you must provide a "content" member introducing the chart.
         Return a plausible bar-chart dataset with up to 10 labels reflecting the user query. 
         Each label's data field is a percentage (0-100). 
         Strongly prefer real brand names to generic ones.
@@ -269,7 +265,7 @@ const generateBarChartData = async (
     const response = await openai.beta.chat.completions.parse({
       model: "gpt-4o-2024-08-06",
       messages,
-      response_format: zodResponseFormat(ChartDataSchema, "chartData"),
+      response_format: zodResponseFormat(BarChartResponseSchema, "chartData"),
     });
     return response.choices[0].message.parsed;
   } else {
@@ -280,30 +276,36 @@ const generateBarChartData = async (
       messages: [
         {
           role: 'user',
-          content: `We have a TypeScript interface ChartData with this shape:
+          content: `Please return a JSON object with two top-level fields:
 {
-  labels: string[];
-  title: string;
-  dateRange: string;
-  demographic: string;
-  datasets: [{
-    label: string;
-    data: number[];
-    backgroundColor: string[];
-    borderColor: string[];
-    borderWidth: number;
-  }]
+  "content": string,
+  "chartData": {
+    "labels": string[],
+    "title": string,
+    "dateRange": string,
+    "demographic": string,
+    "datasets": [{
+      "label": string,
+      "data": number[],
+      "backgroundColor": string[],
+      "borderColor": string[],
+      "borderWidth": number
+    }]
+  }
 }.
+"description": Short introduction of the bar chart.
+"chartData": Bar chart data shaped exactly like the ChartData interface.
 Please produce "chartData" strictly matching that shape for a bar chart with up to 10 labels each corresponding to a brand
 Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
 Include title, dateRange, demographic. Generate fictional but believable data. 
+
 ${formattedInfo}
 The last user query is: "${userQuery}".`
         }
       ]
     });
     const parsed = JSON.parse(resp.message.content);
-    return parsed;
+    return parsed; // this now has { content, chartData }
   }
 };
 
@@ -320,6 +322,7 @@ const generateTimeSeriesData = async (
       {
         role: 'system' as const,
         content: `${main_system_prompt}
+        In the structure you return you must provide a "content" member introducing the chart
         We have a TypeScript interface TimeSeriesData with strict shape requirements. 
         Return a plausible time-series dataset. 
         Strongly prefer real brand names to generic ones.`
@@ -333,7 +336,7 @@ const generateTimeSeriesData = async (
     const response = await openai.beta.chat.completions.parse({
       model: "gpt-4o-2024-08-06",
       messages,
-      response_format: zodResponseFormat(TimeSeriesDataSchema, "chartData"),
+      response_format: zodResponseFormat(TimeSeriesResponseSchema, "chartData"),
     });
     return response.choices[0].message.parsed;
   } else {
@@ -344,20 +347,25 @@ const generateTimeSeriesData = async (
       messages: [
         {
           role: 'user',
-          content: `We have a TypeScript interface TimeSeriesData with this shape:
+          content: `Please return a JSON object with two top-level fields:
 {
-  labels: string[];
-  title: string;
-  dateRange: string;
-  demographic: string;
-  datasets: [{
-    label: string;
-    data: number[];
-    backgroundColor: string;
-    borderColor: string;
-    borderWidth: number;
-  }]
+  "content": string,
+  "chartData": {
+    "labels": string[],
+    "title": string,
+    "dateRange": string,
+    "demographic": string,
+    "datasets": [{
+      "label": string,
+      "data": number[],
+      "backgroundColor": string,
+      "borderColor": string,
+      "borderWidth": number
+    }]
+  }
 }.
+"description": Short introduction of the time series chart.
+"chartData": Time series data shaped exactly like the TimeSeriesData interface.
 Please produce "chartData" strictly matching that shape for a time series chart.
 Include title, dateRange, demographic. Generate fictional but believable data.
 ${formattedInfo}
@@ -366,7 +374,7 @@ The last user query is: "${userQuery}".`
       ]
     });
     const parsed = JSON.parse(resp.message.content);
-    return parsed;
+    return parsed; // this now has { content, chartData }
   }
 };
 
@@ -513,7 +521,7 @@ export default function App() {
       .join('\n');
     const updatedAllUserQueries = `${allUserQueries}\nQuery ${messages.filter(m => m.sender === 'user').length + 1}: ${content}`;
 
-    const data = await generateAISuggestionsResponse(
+    const suggestions = await generateAISuggestionsResponse(
       content,
       useOpenAI,
       industry,
@@ -533,11 +541,11 @@ export default function App() {
 
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
-      content: data.content,
+      content: chartResult.content,
       sender: 'ai',
       timestamp: new Date(),
-      suggestions: data.suggestions,
-      chartData: chartResult
+      suggestions,
+      chartData: chartResult.chartData
     };
     setMessages(prev => [...prev, aiMessage]);
 

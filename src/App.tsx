@@ -521,17 +521,18 @@ export default function App() {
       .join('\n');
     const updatedAllUserQueries = `${allUserQueries}\nQuery ${messages.filter(m => m.sender === 'user').length + 1}: ${content}`;
 
-    const suggestions = await generateAISuggestionsResponse(
-      content,
-      useOpenAI,
-      industry,
-      companyName,
-      useO1ForSuggestions,
-      updatedAllUserQueries
-    );
-    const chartType = await determineChartType(content, industry, companyName, useOpenAI);
-    console.log('Chart type:', chartType);
-
+    const [suggestions, chartType, topic] = await Promise.all([
+      generateAISuggestionsResponse(
+        content,
+        useOpenAI,
+        industry,
+        companyName,
+        useO1ForSuggestions,
+        updatedAllUserQueries
+      ),
+      determineChartType(content, industry, companyName, useOpenAI),
+      determineChatTopic(updatedAllUserQueries, industry, companyName, useOpenAI)
+    ]);
     let chartResult;
     if (chartType === "Time series chart") {
       chartResult = await generateTimeSeriesData(content, useOpenAI, industry, companyName);
@@ -548,8 +549,6 @@ export default function App() {
       chartData: chartResult.chartData
     };
     setMessages(prev => [...prev, aiMessage]);
-
-    const topic = await determineChatTopic(updatedAllUserQueries, industry, companyName, useOpenAI);
     setChatTitle(topic);
     setLoading(false);
   };

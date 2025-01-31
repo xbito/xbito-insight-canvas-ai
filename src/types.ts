@@ -73,3 +73,6 @@ export const TimeSeriesResponseSchema = z.object({
   content: z.string(),
   chartData: TimeSeriesDataSchema
 });
+
+export type Industry = 'automobiles' | 'airlines' | 'beverage' | 'retail' | 'banks' | 'phones' | 'food' | 'cosmetics' | 'apparel' | 'electronics' | 'media' | 'social-media-apps' | 'health-pharma' | 'sports' | 'appliances';
+

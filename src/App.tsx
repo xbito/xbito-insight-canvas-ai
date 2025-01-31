@@ -14,7 +14,8 @@ import {
   ChartTypeSchema,
   SuggestionsSchema,
   BarChartResponseSchema,
-  TimeSeriesResponseSchema
+  TimeSeriesResponseSchema,
+  Industry
 } from './types';
 
 const defaultSuggestions = [
@@ -495,7 +496,7 @@ export default function App() {
     sender: 'ai',
     timestamp: new Date(),
     suggestions: (ind || comp)
-      ? getInitialSuggestions(ind || '', comp || '')
+      ? getInitialSuggestions(ind as Industry, comp || '')
       : defaultSuggestions,
   });
 

@@ -1,5 +1,7 @@
-export const getInitialSuggestions = (industry: string, companyName: string) => {
-  const suggestions = {
+import { Industry } from "./types";
+
+export const getInitialSuggestions = (industry: Industry, companyName: string) => {
+  const suggestions: Record<Industry, string[]> = {
     automobiles: [
       `What are the top car brands by awareness in the ${industry} industry?`,
       `How does ${companyName} compare to other car brands?`,

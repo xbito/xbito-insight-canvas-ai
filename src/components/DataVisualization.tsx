@@ -31,6 +31,14 @@ interface DataVisualizationProps {
   onSuggestionClick?: (suggestion: string) => void;
 }
 
+function DisclaimerNote() {
+  return (
+    <div className="mt-2 text-center text-red-600 text-md font-semibold">
+      Disclaimer: The data in this graph is fictitious and should not be used for any decisions.
+    </div>
+  );
+}
+
 export const DataVisualization: React.FC<DataVisualizationProps> = ({ 
   data,
   onSuggestionClick
@@ -129,9 +137,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="space-y-4 mb-6">
         <h2 className="text-xl font-semibold text-gray-900">{data.title}</h2>
-        <div className="mt-2 text-center text-red-600 text-md font-semibold">
-          Disclaimer: The data in this graph is fictitious and should not be used for any decisions.
-        </div>
+        <DisclaimerNote />
         <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
           <div>
             <span className="font-medium">DATE RANGE</span>
@@ -158,9 +164,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
           className="max-h-[500px]"
         />
       )}
-      <div className="mt-2 text-center text-red-600 text-md font-semibold">
-        Disclaimer: The data in this graph is fictitious and should not be used for any decisions.
-      </div>
+      <DisclaimerNote />
     </div>
   );
 };

@@ -9,6 +9,29 @@ interface ChatMessageProps {
   chartData?: any; // add chartData prop
 }
 
+function SuggestionButtons({
+  suggestions,
+  onSuggestionClick,
+}: {
+  suggestions: string[];
+  onSuggestionClick: (suggestion: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {suggestions.map((suggestion, index) => (
+        <button
+          key={index}
+          onClick={() => onSuggestionClick(suggestion)}
+          className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
+        >
+          <span>{suggestion}</span>
+          <ArrowRight className="w-3 h-3" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, chartData }) => {
   const isAI = message.sender === 'ai';
   
@@ -29,18 +52,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionC
         {isAI && message.suggestions && message.suggestions.length > 0 && message.id == '1' && (
           <div className="mt-4 space-y-2">
             <div className="text-sm font-medium text-gray-500">Suggested follow-up questions:</div>
-            <div className="inline-flex flex-col gap-2">
-              {message.suggestions.map((suggestion, index) => (
-                <button
-                  key={index}
-                  onClick={() => onSuggestionClick(suggestion)}
-                  className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
-                >
-                  <span>{suggestion}</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              ))}
-            </div>
+            <SuggestionButtons
+              suggestions={message.suggestions}
+              onSuggestionClick={onSuggestionClick}
+            />
           </div>
         )}
         {isAI && message.id !== '1' && chartData && (
@@ -57,18 +72,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionC
         {isAI && message.id !== '1' && message.suggestions && message.suggestions.length > 0 && (
           <div className="mt-4 space-y-2">
             <div className="text-sm font-medium text-gray-500">Suggested follow-up questions:</div>
-            <div className="flex flex-wrap gap-2">
-              {message.suggestions.map((suggestion, index) => (
-                <button
-                  key={index}
-                  onClick={() => onSuggestionClick(suggestion)}
-                  className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
-                >
-                  <span>{suggestion}</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              ))}
-            </div>
+            <SuggestionButtons
+              suggestions={message.suggestions}
+              onSuggestionClick={onSuggestionClick}
+            />
           </div>
         )}
         {isAI && message.id !== '1' && (

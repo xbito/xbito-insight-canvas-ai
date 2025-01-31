@@ -166,15 +166,15 @@ const generateAISuggestionsResponse = async (
       },
       {
         role: 'user' as const,
-        content: rawContent
+        content: rawContent || ''
       }
     ];
     const secondResponse = await openai.beta.chat.completions.parse({
       model: "gpt-4o-mini",
       messages: parseMessages,
       response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
-    });
-    return secondResponse.choices[0].message.parsed.suggestions;
+    }) as { choices: { message: { parsed: { suggestions: string[] } } }[] };
+    return secondResponse.choices[0]?.message?.parsed.suggestions || [];
   } else if (useOpenAI) {
     console.log('OpenAI for suggestions');
     const messages = [
@@ -200,7 +200,7 @@ const generateAISuggestionsResponse = async (
       messages: messages,
       response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
     });
-    return response.choices[0].message.parsed.suggestions;
+    return response.choices[0]?.message?.parsed?.suggestions || [];
   } else {
     console.log("Llama for suggestions");
     // Example call to local Llama API
@@ -229,7 +229,7 @@ const generateAISuggestionsResponse = async (
     const json_data = JSON.parse(data.message.content);
     // If the response came with suggestions in an unexpected format, like a list of objects rather than a list of phrases, try to extract the phrases:
     if (json_data.suggestions && json_data.suggestions.length > 0 && typeof(json_data.suggestions[0]) === 'object') {
-      json_data.suggestions = json_data.suggestions.map((suggestion: any) => suggestion.phrase);
+      json_data.suggestions = json_data.suggestions.map((suggestion: { phrase: string }) => suggestion.phrase);
     }
     return json_data.suggestions;
   }
@@ -404,7 +404,7 @@ const determineChatTopic = async (
       messages: messages,
       response_format: zodResponseFormat(ChatTopicSchema, 'topic'),
     });
-    return response.choices[0].message.parsed.topic;
+    return response.choices[0]?.message?.parsed?.topic || '';
   } else {
     console.log('Llama for topic');
     const response = await ollama.chat({
@@ -456,7 +456,7 @@ const determineChartType = async (
       messages: messages,
       response_format: zodResponseFormat(ChartTypeSchema, 'chartType'),
     });
-    return response.choices[0].message.parsed.chartType;
+    return response.choices[0]?.message?.parsed?.chartType || '';
   } else {
     console.log('Llama for chart type');
     const response = await ollama.chat({

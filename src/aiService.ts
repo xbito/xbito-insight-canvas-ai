@@ -1,4 +1,3 @@
-
 import OpenAI from 'openai';
 import ollama from 'ollama';
 import { zodResponseFormat } from "openai/helpers/zod";
@@ -106,10 +105,9 @@ function buildIndustryCompanyText(industry: string, companyName: string) {
 // Simulated AI response generator
 export const generateAISuggestionsResponse = async (
   latestUserQuery: string,
-  useOpenAI: boolean,
+  modelName: string,
   industry?: string,
   companyName?: string,
-  useO1ForSuggestions?: boolean,
   allUserQueries?: string
 ) => {
   const example_suggestions = [
@@ -119,8 +117,9 @@ export const generateAISuggestionsResponse = async (
     "Which fitness app is preferred by Gen Z users?",
   ]
   const formattedInfo = buildIndustryCompanyText(industry || '', companyName || '');
-  if (useO1ForSuggestions) {
-    console.log("o1-mini-2024-09-12 for suggestions");
+
+  if (modelName === "o1-mini") {
+    console.log("Using o1-mini for suggestions, GPT 4o for other calls");
     const messages = [
       {
         role: 'user' as const,
@@ -163,8 +162,8 @@ export const generateAISuggestionsResponse = async (
       response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
     }) as { choices: { message: { parsed: { suggestions: string[] } } }[] };
     return secondResponse.choices[0]?.message?.parsed.suggestions || [];
-  } else if (useOpenAI) {
-    console.log('OpenAI for suggestions');
+  } else if (modelName === "GPT 4o") {
+    console.log('OpenAI for suggestions - GPT 4o');
     const messages = [
       {
         role: 'system' as const,
@@ -189,9 +188,34 @@ export const generateAISuggestionsResponse = async (
       response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
     });
     return response.choices[0]?.message?.parsed?.suggestions || [];
+  } else if (modelName === "o3-mini") {
+    console.log("o3-mini not implemented yet");
+    const messages = [
+        {
+          role: 'system' as const,
+          content: `${main_system_prompt}
+          The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
+          They must be possible to answer with either bar graphs or time series graphs.
+          Don't instruct the user on what to think, only suggest a short phrase they might say next.
+          Here are some example suggestions: ${example_suggestions.join(', ')}.`
+        },
+        {
+          role: 'user' as const,
+          content: `${formattedInfo}
+          Here is the entire user conversation (for context):
+          ${allUserQueries}
+         
+          The last user query is: "${latestUserQuery}".`
+        }
+      ];
+      const response = await openai.beta.chat.completions.parse({
+        model: "o3-mini-2025-1-31",
+        messages: messages,
+        response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
+      });
+      return response.choices[0]?.message?.parsed?.suggestions || [];
   } else {
     console.log("Llama for suggestions");
-    // Example call to local Llama API
     const response = await ollama.chat({
       model: 'llama3.1',
       format: 'json',
@@ -225,13 +249,13 @@ export const generateAISuggestionsResponse = async (
 
 export const generateBarChartData = async (
   userQuery: string,
-  useOpenAI: boolean,
+  modelName: string,
   industry?: string,
   companyName?: string
 ) => {
   const formattedInfo = buildIndustryCompanyText(industry || '', companyName || '');
-  if (useOpenAI) {
-    console.log('OpenAI for bar chart data');
+  if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
+    console.log('Using GPT 4o for bar chart data');
     const messages = [
       {
         role: 'system' as const,
@@ -257,7 +281,7 @@ export const generateBarChartData = async (
     });
     return response.choices[0].message.parsed;
   } else {
-    console.log('Llama for chart data');
+    console.log('Llama for bar chart data');
     const resp = await ollama.chat({
       model: 'llama3.1',
       format: 'json',
@@ -299,13 +323,13 @@ The last user query is: "${userQuery}".`
 
 export const generateTimeSeriesData = async (
   userQuery: string,
-  useOpenAI: boolean,
+  modelName: string,
   industry?: string,
   companyName?: string
 ) => {
   const formattedInfo = buildIndustryCompanyText(industry || '', companyName || '');
-  if (useOpenAI) {
-    console.log('OpenAI for time series data');
+  if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
+    console.log('Using GPT 4o for time series data');
     const messages = [
       {
         role: 'system' as const,
@@ -370,11 +394,11 @@ export const determineChatTopic = async (
   allUserMessages: string,
   industry: string,
   companyName: string,
-  useOpenAI: boolean
+  modelName: string
 ) => {
   const formattedInfo = buildIndustryCompanyText(industry, companyName);
-  if (useOpenAI) {
-    console.log('OpenAI for topic');
+  if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
+    console.log('Using GPT 4o for topic');
     // Use OpenAI
     const messages = [
       {
@@ -421,11 +445,11 @@ export const determineChartType = async (
   userQuery: string,
   industry: string,
   companyName: string,
-  useOpenAI: boolean
+  modelName: string
 ) => {
   const formattedInfo = buildIndustryCompanyText(industry, companyName);
-  if (useOpenAI) {
-    console.log('OpenAI for chart type');
+  if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
+    console.log('Using GPT 4o for chart type');
     // Use OpenAI
     const messages = [
       {
@@ -436,7 +460,8 @@ export const determineChartType = async (
       },
       {
         role: 'user' as const,
-        content: `${formattedInfo}User query: "${userQuery}".`
+        content: `${formattedInfo}
+        The last user query is: "${userQuery}".`
       }
     ];
     const response = await openai.beta.chat.completions.parse({

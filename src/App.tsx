@@ -24,8 +24,7 @@ const defaultSuggestions = [
 export default function App() {
   const [industry, setIndustry] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [useOpenAI, setUseOpenAI] = useState(false);
-  const [useO1ForSuggestions, setUseO1ForSuggestions] = useState(false); 
+  const [modelName, setModelName] = useState("Llama 3.1");
 
   const createInitialMessage = (ind?: string, comp?: string): Message => ({
     id: '1',
@@ -62,20 +61,19 @@ export default function App() {
     const [suggestions, chartType, topic] = await Promise.all([
       generateAISuggestionsResponse(
         content,
-        useOpenAI,
+        modelName,
         industry,
         companyName,
-        useO1ForSuggestions,
         updatedAllUserQueries
       ),
-      determineChartType(content, industry, companyName, useOpenAI),
-      determineChatTopic(updatedAllUserQueries, industry, companyName, useOpenAI)
+      determineChartType(content, industry, companyName, modelName),
+      determineChatTopic(updatedAllUserQueries, industry, companyName, modelName)
     ]);
     let chartResult;
     if (chartType === "Time series chart") {
-      chartResult = await generateTimeSeriesData(content, useOpenAI, industry, companyName);
+      chartResult = await generateTimeSeriesData(content, modelName, industry, companyName);
     } else {
-      chartResult = await generateBarChartData(content, useOpenAI, industry, companyName);
+      chartResult = await generateBarChartData(content, modelName, industry, companyName);
     }
 
     const aiMessage: Message = {
@@ -153,24 +151,17 @@ export default function App() {
             className="mt-1 block w-full border-gray-300 rounded-md"
           />
 
-          <div className="mt-4 flex items-center">
-            <label className="block text-sm font-medium text-gray-700 mr-2">Use OpenAI</label>
-            <input
-              type="checkbox"
-              checked={useOpenAI}
-              onChange={(e) => setUseOpenAI(e.target.checked)}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-            />
-          </div>
-          <div className="mt-4 flex items-center">
-            <label className="block text-sm font-medium text-gray-700 mr-2">Use o1 for suggestions</label>
-            <input
-              type="checkbox"
-              checked={useO1ForSuggestions}
-              onChange={(e) => setUseO1ForSuggestions(e.target.checked)}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-            />  
-          </div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 mt-4">Model</label>
+          <select
+            value={modelName}
+            onChange={(e) => setModelName(e.target.value)}
+            className="block w-full border-gray-300 rounded-md"
+          >
+            <option value="Llama 3.1">Llama 3.1 (default)</option>
+            <option value="GPT 4o">GPT 4o</option>
+            <option value="o1-mini">o1-mini + GPT 4o</option>
+            {/* <option value="o3-mini">o3-mini</option> */}
+          </select>
         </div>
       </div>
       {/* Main Content */}

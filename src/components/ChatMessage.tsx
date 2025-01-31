@@ -29,7 +29,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionC
         {isAI && message.suggestions && message.suggestions.length > 0 && message.id == '1' && (
           <div className="mt-4 space-y-2">
             <div className="text-sm font-medium text-gray-500">Suggested follow-up questions:</div>
-            <div className="flex flex-wrap gap-2">
+            <div className="inline-flex flex-col gap-2">
               {message.suggestions.map((suggestion, index) => (
                 <button
                   key={index}

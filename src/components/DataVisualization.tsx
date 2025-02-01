@@ -28,7 +28,6 @@ interface DataVisualizationProps {
   data: ChartData;
   title?: string;
   suggestions?: string[];
-  onSuggestionClick?: (suggestion: string) => void;
 }
 
 function DisclaimerNote() {
@@ -40,36 +39,8 @@ function DisclaimerNote() {
 }
 
 export const DataVisualization: React.FC<DataVisualizationProps> = ({ 
-  data,
-  onSuggestionClick
+  data
 }) => {
-  const options = {
-    responsive: true,
-    indexAxis: 'y' as const,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      title: {
-        display: false,
-      },
-    },
-    scales: {
-      x: {
-        beginAtZero: true,
-        max: 100,
-        ticks: {
-          callback: function(value: any) {
-            return value + '%';
-          }
-        }
-      },
-      y: {
-        beginAtZero: true
-      }
-    }
-  };
-
   const isBarChart = Array.isArray(data.datasets?.[0]?.backgroundColor);
 
   let chartJsData;
@@ -100,7 +71,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
 
   const chartOptions = {
     responsive: true,
-    indexAxis: isBarChart ? 'y' : 'x',
+    indexAxis: isBarChart ? 'y' as const : 'x' as const,
     plugins: {
       legend: {
         display: !isBarChart,

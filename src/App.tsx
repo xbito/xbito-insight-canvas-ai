@@ -24,6 +24,7 @@ const defaultSuggestions = [
 export default function App() {
   const [industry, setIndustry] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [country, setCountry] = useState("United States"); // new state
   const [modelName, setModelName] = useState("Llama 3.1");
 
   const createInitialMessage = (ind?: string, comp?: string): Message => ({
@@ -64,16 +65,17 @@ export default function App() {
         modelName,
         industry,
         companyName,
+        country, // pass country
         updatedAllUserQueries
       ),
-      determineChartType(content, industry, companyName, modelName),
-      determineChatTopic(updatedAllUserQueries, industry, companyName, modelName)
+      determineChartType(content, industry, companyName, country, modelName), // updated call
+      determineChatTopic(updatedAllUserQueries, industry, companyName, country, modelName) // updated call
     ]);
     let chartResult;
     if (chartType === "Time series chart") {
-      chartResult = await generateTimeSeriesData(content, modelName, industry, companyName);
+      chartResult = await generateTimeSeriesData(content, modelName, industry, companyName, country); // updated call
     } else {
-      chartResult = await generateBarChartData(content, modelName, industry, companyName);
+      chartResult = await generateBarChartData(content, modelName, industry, companyName, country); // updated call
     }
 
     const aiMessage: Message = {
@@ -117,6 +119,20 @@ export default function App() {
           </button>
         </div>
         <div className="mt-auto p-4 border-t border-gray-200">
+          {/* New Select for Country */}
+          <label className="block text-sm font-medium text-gray-700 mt-4" htmlFor="countrySelect">Country</label>
+          <select
+            id="countrySelect"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="mt-1 block w-full border-gray-300 rounded-md"
+          >
+            <option value="United States">United States</option>
+            <option value="Peru">Peru</option>
+            <option value="Canada">Canada</option>
+            <option value="Mexico">Mexico</option>
+            <option value="United Kingdom">United Kingdom</option>
+          </select>
           <label className="block text-sm font-medium text-gray-700" htmlFor="industrySelect">Industry</label>
           <select
             id="industrySelect"
@@ -150,6 +166,8 @@ export default function App() {
             onChange={(e) => setCompanyName(e.target.value)}
             className="mt-1 block w-full border-gray-300 rounded-md"
           />
+
+
 
           <label className="block text-sm font-medium text-gray-700 mb-2 mt-4">Model</label>
           <select

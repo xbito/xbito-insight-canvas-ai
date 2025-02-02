@@ -91,13 +91,17 @@ loyalty_score (numeric) - how loyal are you to this brand?
 engagement_score (numeric) - how engaged are you with this brand?
 `
 
-function buildIndustryCompanyText(industry: string, companyName: string) {
+// Renamed function with extra parameter "country"
+function buildContextText(industry: string, companyName: string, country: string) {
   let text = '';
   if (industry) {
     text += `Industry: "${industry}". `;
   }
   if (companyName) {
     text += `Company name: "${companyName}". `;
+  }
+  if (country) {
+    text += `Country: "${country}". `;
   }
   return text.trim();
 }
@@ -108,6 +112,7 @@ export const generateAISuggestionsResponse = async (
   modelName: string,
   industry?: string,
   companyName?: string,
+  country?: string, // new parameter
   allUserQueries?: string
 ) => {
   const example_suggestions = [
@@ -116,7 +121,7 @@ export const generateAISuggestionsResponse = async (
     "What are the most trusted smartphone brands globally?",
     "Which fitness app is preferred by Gen Z users?",
   ]
-  const formattedInfo = buildIndustryCompanyText(industry || '', companyName || '');
+  const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
 
   if (modelName === "o1-mini") {
     console.log("Using o1-mini for suggestions, GPT 4o for other calls");
@@ -251,9 +256,10 @@ export const generateBarChartData = async (
   userQuery: string,
   modelName: string,
   industry?: string,
-  companyName?: string
+  companyName?: string,
+  country?: string // new parameter
 ) => {
-  const formattedInfo = buildIndustryCompanyText(industry || '', companyName || '');
+  const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
   if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
     console.log('Using GPT 4o for bar chart data');
     const messages = [
@@ -325,9 +331,10 @@ export const generateTimeSeriesData = async (
   userQuery: string,
   modelName: string,
   industry?: string,
-  companyName?: string
+  companyName?: string,
+  country?: string // new parameter
 ) => {
-  const formattedInfo = buildIndustryCompanyText(industry || '', companyName || '');
+  const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
   if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
     console.log('Using GPT 4o for time series data');
     const messages = [
@@ -394,9 +401,10 @@ export const determineChatTopic = async (
   allUserMessages: string,
   industry: string,
   companyName: string,
+  country: string, // new parameter (required)
   modelName: string
 ) => {
-  const formattedInfo = buildIndustryCompanyText(industry, companyName);
+  const formattedInfo = buildContextText(industry, companyName, country);
   if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
     console.log('Using GPT 4o for topic');
     // Use OpenAI
@@ -445,9 +453,10 @@ export const determineChartType = async (
   userQuery: string,
   industry: string,
   companyName: string,
+  country: string, // new parameter (required)
   modelName: string
 ) => {
-  const formattedInfo = buildIndustryCompanyText(industry, companyName);
+  const formattedInfo = buildContextText(industry, companyName, country);
   if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
     console.log('Using GPT 4o for chart type');
     // Use OpenAI

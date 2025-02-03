@@ -49,7 +49,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionC
         <div className="mt-1 text-gray-700">
           {message.content}
         </div>
-        {isAI && message.suggestions && message.suggestions.length > 0 && message.id == '1' && (
+        {isAI && !message.compareSuggestions && message.suggestions && message.suggestions.length > 0 && message.id == '1' && (
           <div className="mt-4 space-y-2">
             <div className="text-sm font-medium text-gray-500">Suggested follow-up questions:</div>
             <SuggestionButtons
@@ -65,8 +65,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionC
             />
           </div>
         )}
-
-
         {isAI && message.id !== '1' && message.suggestions && message.suggestions.length > 0 && (
           <div className="mt-4 space-y-2">
             <div className="text-sm font-medium text-gray-500">Suggested follow-up questions:</div>
@@ -74,6 +72,21 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionC
               suggestions={message.suggestions}
               onSuggestionClick={onSuggestionClick}
             />
+          </div>
+        )}
+        {isAI && message.compareSuggestions && (
+          <div className="mt-4">
+            <div className="text-sm font-medium text-gray-500 mb-2">
+              Suggested follow-up questions per model:
+            </div>
+            <div className="flex flex-wrap gap-4">
+              {Object.entries(message.compareSuggestions).map(([model, suggestions]) => (
+                <div key={model} className="flex flex-col min-w-[200px]">
+                  <div className="font-semibold text-blue-700 mb-1">{model}</div>
+                  <SuggestionButtons suggestions={suggestions} onSuggestionClick={onSuggestionClick} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
         {isAI && message.id !== '1' && (

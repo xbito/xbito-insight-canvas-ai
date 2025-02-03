@@ -8,6 +8,8 @@ export interface Message {
   suggestions?: string[];
   chartData?: ChartData;
   chatTitle?: string;
+  // New property to hold suggestions per model when comparing
+  compareSuggestions?: Record<string, string[]>;
 }
 
 export interface ChartData {

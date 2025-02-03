@@ -26,7 +26,11 @@ export default function App() {
   const [industry, setIndustry] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [country, setCountry] = useState("United States"); // Country selector state
-  const [modelName, setModelName] = useState("Llama 3.1");
+  // availableModels drives the model select options and suggestions comparison
+  const availableModels = ["Llama 3.1", "GPT 4o", "o1-mini"];
+  const [modelName, setModelName] = useState(availableModels[0]);
+  // New state for comparing suggestions
+  const [compareSuggestions, setCompareSuggestions] = useState(false);
 
   // Create the initial message (welcome message with suggestions)
   const createInitialMessage = (ind?: string, comp?: string): Message => ({
@@ -67,21 +71,52 @@ export default function App() {
       .join('\n');
     const updatedAllUserQueries = `${allUserQueries}\nQuery ${messages.filter(m => m.sender === 'user').length + 1}: ${content}`;
 
-    // Call AI services concurrently to get suggestions, chart type and topic
-    const [suggestions, chartType, topic] = await Promise.all([
-      generateAISuggestionsResponse(
-        content,
-        modelName,
-        industry,
-        companyName,
-        country, // pass country context
-        updatedAllUserQueries
-      ),
-      determineChartType(content, industry, companyName, country, modelName), 
-      determineChatTopic(updatedAllUserQueries, industry, companyName, country, modelName)
-    ]);
+    let suggestions: string[] = [];
+    let compareSuggestionsObj: Record<string, string[]> | undefined;
+    let chartType: string, topic: string;
 
-    // Fetch chart data based on the suggested chart type
+    if (compareSuggestions) {
+      // Trigger suggestions for all available models in parallel
+      const responses = await Promise.all(
+        availableModels.map(m =>
+          generateAISuggestionsResponse(
+            content,
+            m,
+            industry,
+            companyName,
+            country,
+            updatedAllUserQueries
+          )
+        )
+      );
+      // Map responses to models
+      compareSuggestionsObj = availableModels.reduce((acc, m, idx) => {
+        acc[m] = responses[idx];
+        return acc;
+      }, {} as Record<string, string[]>);
+
+      // Use the currently selected model for the remaining calls
+      [chartType, topic] = await Promise.all([
+        determineChartType(content, industry, companyName, country, modelName),
+        determineChatTopic(updatedAllUserQueries, industry, companyName, country, modelName)
+      ]);
+    } else {
+      // Existing behavior with a single-model suggestion call
+      [suggestions, chartType, topic] = await Promise.all([
+        generateAISuggestionsResponse(
+          content,
+          modelName,
+          industry,
+          companyName,
+          country,
+          updatedAllUserQueries
+        ),
+        determineChartType(content, industry, companyName, country, modelName), 
+        determineChatTopic(updatedAllUserQueries, industry, companyName, country, modelName)
+      ]);
+    }
+
+    // Fetch chart data based on the suggested chart type (using selected model)
     let chartResult;
     if (chartType === "Time series chart") {
       chartResult = await generateTimeSeriesData(content, modelName, industry, companyName, country); 
@@ -89,14 +124,15 @@ export default function App() {
       chartResult = await generateBarChartData(content, modelName, industry, companyName, country);
     }
 
-    // Create the AI message with generated content, chart data and suggestions, then update the conversation
+    // Create the AI message with generated content, chart data and suggestions/compareSuggestions
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
       content: chartResult.content,
       sender: 'ai',
       timestamp: new Date(),
-      suggestions,
-      chartData: chartResult.chartData
+      suggestions: compareSuggestions ? [] : suggestions,
+      chartData: chartResult.chartData,
+      compareSuggestions: compareSuggestions ? compareSuggestionsObj : undefined
     };
     setMessages(prev => [...prev, aiMessage]);
     setChatTitle(topic);
@@ -186,18 +222,30 @@ export default function App() {
             className="mt-1 block w-full border-gray-300 rounded-md"
           />
 
-          {/* Model Selector */}
+          {/* Model Selector driven by availableModels */}
           <label className="block text-sm font-medium text-gray-700 mb-2 mt-4">Model</label>
           <select
             value={modelName}
             onChange={(e) => setModelName(e.target.value)}
             className="block w-full border-gray-300 rounded-md"
           >
-            <option value="Llama 3.1">Llama 3.1 (default)</option>
-            <option value="GPT 4o">GPT 4o</option>
-            <option value="o1-mini">o1-mini + GPT 4o</option>
-            {/* <option value="o3-mini">o3-mini</option> */}
+            {availableModels.map(model => (
+              <option key={model} value={model}>{model}{model === availableModels[0] ? ' (default)' : ''}</option>
+            ))}
           </select>
+          {/* New Compare Suggestions Checkbox */}
+          <div className="mt-4 flex items-center">
+            <input
+              id="compareSuggestions"
+              type="checkbox"
+              checked={compareSuggestions}
+              onChange={(e) => setCompareSuggestions(e.target.checked)}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+            />
+            <label htmlFor="compareSuggestions" className="ml-2 block text-sm text-gray-700">
+              Compare suggestions
+            </label>
+          </div>
         </div>
       </div>
       {/* Main Content: Chat conversation and user input */}

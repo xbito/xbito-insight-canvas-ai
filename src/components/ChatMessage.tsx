@@ -1,12 +1,12 @@
 import React from 'react';
-import { Message } from '../types';
+import { Message, ChartData } from '../types';
 import { UserCircle, Bot, ArrowRight } from 'lucide-react';
 import { DataVisualization } from './DataVisualization';
 
 interface ChatMessageProps {
   message: Message;
   onSuggestionClick: (suggestion: string) => void;
-  chartData?: any; // add chartData prop
+  chartData?: ChartData; // add chartData prop
 }
 
 function SuggestionButtons({
@@ -62,8 +62,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionC
           <div className="mt-4">
             <DataVisualization
               data={chartData}
-              suggestions={message.suggestions}
-              onSuggestionClick={onSuggestionClick}
             />
           </div>
         )}

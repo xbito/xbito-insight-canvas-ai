@@ -86,7 +86,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
             beginAtZero: true,
             max: 100,
             ticks: {
-              callback: function(value: any) {
+              callback: function(value: number | string) {
                 return value + '%';
               }
             }

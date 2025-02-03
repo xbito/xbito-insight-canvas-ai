@@ -112,7 +112,7 @@ export const generateAISuggestionsResponse = async (
   modelName: string,
   industry?: string,
   companyName?: string,
-  country?: string, // new parameter
+  country?: string, 
   allUserQueries?: string
 ) => {
   const example_suggestions = [
@@ -257,7 +257,7 @@ export const generateBarChartData = async (
   modelName: string,
   industry?: string,
   companyName?: string,
-  country?: string // new parameter
+  country?: string 
 ) => {
   const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
   if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
@@ -332,7 +332,7 @@ export const generateTimeSeriesData = async (
   modelName: string,
   industry?: string,
   companyName?: string,
-  country?: string // new parameter
+  country?: string 
 ) => {
   const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
   if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
@@ -401,7 +401,7 @@ export const determineChatTopic = async (
   allUserMessages: string,
   industry: string,
   companyName: string,
-  country: string, // new parameter (required)
+  country: string, 
   modelName: string
 ) => {
   const formattedInfo = buildContextText(industry, companyName, country);
@@ -453,7 +453,7 @@ export const determineChartType = async (
   userQuery: string,
   industry: string,
   companyName: string,
-  country: string, // new parameter (required)
+  country: string, 
   modelName: string
 ) => {
   const formattedInfo = buildContextText(industry, companyName, country);

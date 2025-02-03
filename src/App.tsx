@@ -68,14 +68,14 @@ export default function App() {
         country, // pass country
         updatedAllUserQueries
       ),
-      determineChartType(content, industry, companyName, country, modelName), // updated call
-      determineChatTopic(updatedAllUserQueries, industry, companyName, country, modelName) // updated call
+      determineChartType(content, industry, companyName, country, modelName), 
+      determineChatTopic(updatedAllUserQueries, industry, companyName, country, modelName)
     ]);
     let chartResult;
     if (chartType === "Time series chart") {
-      chartResult = await generateTimeSeriesData(content, modelName, industry, companyName, country); // updated call
+      chartResult = await generateTimeSeriesData(content, modelName, industry, companyName, country); 
     } else {
-      chartResult = await generateBarChartData(content, modelName, industry, companyName, country); // updated call
+      chartResult = await generateBarChartData(content, modelName, industry, companyName, country);
     }
 
     const aiMessage: Message = {

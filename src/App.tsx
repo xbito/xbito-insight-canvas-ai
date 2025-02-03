@@ -22,11 +22,13 @@ const defaultSuggestions = [
 ];
 
 export default function App() {
+  // State declarations for context and configuration
   const [industry, setIndustry] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [country, setCountry] = useState("United States"); // new state
+  const [country, setCountry] = useState("United States"); // Country selector state
   const [modelName, setModelName] = useState("Llama 3.1");
 
+  // Create the initial message (welcome message with suggestions)
   const createInitialMessage = (ind?: string, comp?: string): Message => ({
     id: '1',
     content: 'Hello! I can help you analyze brand sentiment and audience data and create visualizations. What would you like to know?',
@@ -37,13 +39,16 @@ export default function App() {
       : defaultSuggestions,
   });
 
+  // Messages state holds the conversation history
   const [messages, setMessages] = useState<Message[]>([createInitialMessage()]);
 
   const [chatTitle, setChatTitle] = useState<string>('New Chat');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Function to handle sending messages from the user
   const handleSendMessage = async (content: string) => {
+    // Create and add the user's message to conversation history
     const userMessage: Message = {
       id: Date.now().toString(),
       content,
@@ -52,25 +57,31 @@ export default function App() {
     };
     setMessages(prev => [...prev, userMessage]);
 
+    // Begin loading - AI response is being fetched
     setLoading(true);
+
+    // Build the conversation context with all user queries
     const allUserQueries = messages
       .filter(m => m.sender === 'user')
       .map((m, index) => `Query ${index + 1}: ${m.content}`)
       .join('\n');
     const updatedAllUserQueries = `${allUserQueries}\nQuery ${messages.filter(m => m.sender === 'user').length + 1}: ${content}`;
 
+    // Call AI services concurrently to get suggestions, chart type and topic
     const [suggestions, chartType, topic] = await Promise.all([
       generateAISuggestionsResponse(
         content,
         modelName,
         industry,
         companyName,
-        country, // pass country
+        country, // pass country context
         updatedAllUserQueries
       ),
       determineChartType(content, industry, companyName, country, modelName), 
       determineChatTopic(updatedAllUserQueries, industry, companyName, country, modelName)
     ]);
+
+    // Fetch chart data based on the suggested chart type
     let chartResult;
     if (chartType === "Time series chart") {
       chartResult = await generateTimeSeriesData(content, modelName, industry, companyName, country); 
@@ -78,6 +89,7 @@ export default function App() {
       chartResult = await generateBarChartData(content, modelName, industry, companyName, country);
     }
 
+    // Create the AI message with generated content, chart data and suggestions, then update the conversation
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
       content: chartResult.content,
@@ -88,9 +100,10 @@ export default function App() {
     };
     setMessages(prev => [...prev, aiMessage]);
     setChatTitle(topic);
-    setLoading(false);
+    setLoading(false); // End loading state
   };
 
+  // Effect: Update initial AI message suggestions when industry or company name change
   useEffect(() => {
     // Update only the first AI message suggestions if industry or company name changed
     setMessages((prev) => {
@@ -99,27 +112,31 @@ export default function App() {
     });
   }, [industry, companyName]);
 
+  // Effect: Auto-scroll to the bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
+      {/* Sidebar: Contains chat title, context selectors (Country, Industry, Company, Model) */}
       <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+        {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <BarChart className="w-6 h-6 text-blue-600" />
             <h1 className="text-xl font-semibold text-gray-900">Data Chat AI</h1>
           </div>
         </div>
+        {/* Chat list */}
         <div className="flex-1 overflow-y-auto p-4">
           <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">
             {chatTitle}
           </button>
         </div>
+        {/* Context Selectors */}
         <div className="mt-auto p-4 border-t border-gray-200">
-          {/* New Select for Country */}
+          {/* Country Selector */}
           <label className="block text-sm font-medium text-gray-700 mt-4" htmlFor="countrySelect">Country</label>
           <select
             id="countrySelect"
@@ -133,6 +150,7 @@ export default function App() {
             <option value="Mexico">Mexico</option>
             <option value="United Kingdom">United Kingdom</option>
           </select>
+          {/* Industry Selector */}
           <label className="block text-sm font-medium text-gray-700" htmlFor="industrySelect">Industry</label>
           <select
             id="industrySelect"
@@ -158,6 +176,7 @@ export default function App() {
             <option value="appliances">Appliances</option>
           </select>
 
+          {/* Company Name Input */}
           <label className="block text-sm font-medium text-gray-700 mt-4" htmlFor="companyName">Company Name</label>
           <input
             id="companyName"
@@ -167,8 +186,7 @@ export default function App() {
             className="mt-1 block w-full border-gray-300 rounded-md"
           />
 
-
-
+          {/* Model Selector */}
           <label className="block text-sm font-medium text-gray-700 mb-2 mt-4">Model</label>
           <select
             value={modelName}
@@ -182,7 +200,7 @@ export default function App() {
           </select>
         </div>
       </div>
-      {/* Main Content */}
+      {/* Main Content: Chat conversation and user input */}
       <div className="flex-1 flex flex-col">
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto">
@@ -192,7 +210,7 @@ export default function App() {
                 key={message.id}
                 message={message}
                 onSuggestionClick={handleSendMessage}
-                chartData={message.chartData} // pass chart data
+                chartData={message.chartData} // pass chart data if available
               />
             ))}
             {loading && (
@@ -204,7 +222,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Input */}
+        {/* Chat Input Component */}
         <div className="max-w-4xl mx-auto w-full">
           <ChatInput onSendMessage={handleSendMessage} />
         </div>

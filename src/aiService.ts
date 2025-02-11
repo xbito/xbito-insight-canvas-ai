@@ -125,6 +125,7 @@ export const generateAISuggestionsResponse = async (
 
   if (modelName === "o1-mini") {
     console.log("Using o1-mini for suggestions, GPT 4o for other calls");
+    // o1-mini doesn't support system messages, so we have to put everything into 1 user message.
     const messages = [
       {
         role: 'user' as const,
@@ -149,6 +150,7 @@ export const generateAISuggestionsResponse = async (
       model: "o1-mini-2024-09-12",
       messages
     });
+    // o1-mini doesn't support structured responses, but we can pass the response to GPT 4o to parse it and return the desired format.
     const rawContent = firstResponse.choices[0].message.content;
     const parseMessages = [
       {
@@ -223,11 +225,11 @@ export const generateAISuggestionsResponse = async (
     console.log("Llama for suggestions");
     const response = await ollama.chat({
       model: 'llama3.1',
-      format: 'json',
+      format: {'type': 'object', 'properties': {'suggestions': {'type': 'array', 'items': {'type': 'string'}}}},
       messages :[
         {
           role: 'user',
-          content: `Please return a JSON object with "suggestions" as an array of single-sentence suggestions as simple strings. 
+          content: `${main_system_prompt}
           The suggestions should be phrased as if the user was the one that is going to send that message. 
           Don't instruct the user on what to think about next, rather exactly suggest what phrase he may use as a response/follow up. 
           The suggestions should aim to generate more graphs to analyze brand sentiment and audience data and create visualizations.
@@ -238,7 +240,8 @@ export const generateAISuggestionsResponse = async (
           Full conversation (for context):
           ${allUserQueries}
           
-          The last user query is: "${latestUserQuery}".`
+          The last user query is: "${latestUserQuery}".
+          Respond using JSON.`
         }
       ]
     });
@@ -290,40 +293,69 @@ export const generateBarChartData = async (
     console.log('Llama for bar chart data');
     const resp = await ollama.chat({
       model: 'llama3.1',
-      format: 'json',
+      format: {
+        'type': 'object',
+        'required': ['content', 'chartData'],
+        'properties': {
+          'content': {'type': 'string'},
+          'chartData': {
+            'type': 'object',
+            'required': ['labels', 'title', 'dateRange', 'demographic', 'datasets'],
+            'properties': {
+              'labels': {'type': 'array', 'items': {'type': 'string'}},
+              'title': {'type': 'string'},
+              'dateRange': {'type': 'string'},
+              'demographic': {'type': 'string'},
+              'datasets': {
+                'type': 'array',
+                'items': {
+                  'type': 'object',
+                  'required': ['label', 'data', 'backgroundColor', 'borderColor', 'borderWidth'],
+                  'properties': {
+                    'label': {'type': 'string'},
+                    'data': {'type': 'array', 'items': {'type': 'number'}},
+                    'backgroundColor': {'type': 'array', 'items': {'type': 'string'}},
+                    'borderColor': {'type': 'array', 'items': {'type': 'string'}},
+                    'borderWidth': {'type': 'number'}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       messages: [
         {
           role: 'user',
-          content: `Please return a JSON object with two top-level fields:
-{
-  "content": string,
-  "chartData": {
-    "labels": string[],
-    "title": string,
-    "dateRange": string,
-    "demographic": string,
-    "datasets": [{
-      "label": string,
-      "data": number[],
-      "backgroundColor": string[],
-      "borderColor": string[],
-      "borderWidth": number
-    }]
-  }
-}.
-"description": Short introduction of the bar chart.
-"chartData": Bar chart data shaped exactly like the ChartData interface.
-Please produce "chartData" strictly matching that shape for a bar chart with up to 10 labels each corresponding to a brand
-Each label will have a matching record in the datasets data array with each being a percentage (0-100). 
-Include title, dateRange, demographic. Generate fictional but believable data. 
+          content: `${main_system_prompt}
+          The "chartData" member must follow this exact structure for a react-chartjs-2 bar chart:
+          - labels: array of brand names that corresponds to the data points
+          - title: descriptive chart title
+          - dateRange: time period of the data
+          - demographic: target population
+          - datasets: array containing one object with:
+            - label: description of what the values represent
+            - data: array of numeric values (percentages 0-100) corresponding to each label
+            - backgroundColor: array of colors for all bars
+            - borderColor: array of colors for all borders
+            - borderWidth: number for border width
 
-${formattedInfo}
-The last user query is: "${userQuery}".`
+          Please produce bar chart data with up to 10 labels each corresponding to a brand.
+          Important: The data array should contain direct numbers, not arrays of numbers.
+          Important: backgroundColor and borderColor should each be a single array for all bars, not individual arrays per bar.
+          Generate fictional but believable data.
+          Strongly prefer real brand names to generic ones.
+          Never make up brand names.
+          Never return "Brand A", "Brand B", etc.
+          
+          ${formattedInfo}
+          The last user query is: "${userQuery}".
+          Respond using JSON.`
         }
       ]
     });
     const parsed = JSON.parse(resp.message.content);
-    return parsed; // this now has { content, chartData }
+    return parsed;
   }
 };
 
@@ -362,38 +394,69 @@ export const generateTimeSeriesData = async (
     console.log('Llama for time series data');
     const resp = await ollama.chat({
       model: 'llama3.1',
-      format: 'json',
+      format: {
+        'type': 'object',
+        'required': ['content', 'chartData'],
+        'properties': {
+          'content': {'type': 'string'},
+          'chartData': {
+            'type': 'object',
+            'required': ['labels', 'title', 'dateRange', 'demographic', 'datasets'],
+            'properties': {
+              'labels': {'type': 'array', 'items': {'type': 'string'}},
+              'title': {'type': 'string'},
+              'dateRange': {'type': 'string'},
+              'demographic': {'type': 'string'},
+              'datasets': {
+                'type': 'array',
+                'items': {
+                  'type': 'object',
+                  'required': ['label', 'data', 'backgroundColor', 'borderColor', 'borderWidth'],
+                  'properties': {
+                    'label': {'type': 'string'},
+                    'data': {'type': 'array', 'items': {'type': 'number', 'minimum': 0, 'maximum': 100}},
+                    'backgroundColor': {'type': 'string'},
+                    'borderColor': {'type': 'string'},
+                    'borderWidth': {'type': 'number'}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       messages: [
         {
           role: 'user',
-          content: `Please return a JSON object with two top-level fields:
-{
-  "content": string,
-  "chartData": {
-    "labels": string[],
-    "title": string,
-    "dateRange": string,
-    "demographic": string,
-    "datasets": [{
-      "label": string,
-      "data": number[],
-      "backgroundColor": string,
-      "borderColor": string,
-      "borderWidth": number
-    }]
-  }
-}.
-"description": Short introduction of the time series chart.
-"chartData": Time series data shaped exactly like the TimeSeriesData interface.
-Please produce "chartData" strictly matching that shape for a time series chart.
-Include title, dateRange, demographic. Generate fictional but believable data.
-${formattedInfo}
-The last user query is: "${userQuery}".`
+          content: `${main_system_prompt}
+          The "chartData" member must follow this exact structure for a react-chartjs-2 line chart:
+          - labels: array of dates or time periods
+          - title: descriptive chart title
+          - dateRange: human-readable time period covered by the data
+          - demographic: target population description
+          - datasets: array of objects, each representing a brand's data series with:
+            - label: brand name
+            - data: array of numeric values (percentages 0-100) corresponding to each time period
+            - backgroundColor: single color string in rgba format for the area under the line
+            - borderColor: single color string in rgba format for the line itself
+            - borderWidth: number for line width
+
+          Please produce time series data tracking brand metrics over time.
+          Important: All percentage values must be between 0 and 100.
+          Important: Each dataset needs both backgroundColor and borderColor.
+          Important: Use proper RGBA color format (e.g. "rgba(255, 99, 132, 0.2)" for background, "rgba(255, 99, 132, 1)" for border).
+          Generate fictional but believable data.
+          Strongly prefer real brand names to generic ones.
+          Never make up brand names.
+          
+          ${formattedInfo}
+          The last user query is: "${userQuery}".
+          Respond using JSON.`
         }
       ]
     });
     const parsed = JSON.parse(resp.message.content);
-    return parsed; // this now has { content, chartData }
+    return parsed;
   }
 };
 

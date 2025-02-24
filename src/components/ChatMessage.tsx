@@ -32,6 +32,51 @@ function SuggestionButtons({
   );
 }
 
+function CompareModelSuggestions({
+  compareSuggestions,
+  onSuggestionClick,
+}: {
+  compareSuggestions: Record<string, string[]>;
+  onSuggestionClick: (suggestion: string) => void;
+}) {
+  // All models are pre-selected now, so we just need to use them directly
+  const models = Object.keys(compareSuggestions);
+  
+  // Get the maximum number of suggestions across all models
+  const maxSuggestions = Math.max(
+    ...models.map(model => compareSuggestions[model].length)
+  );
+
+  return (
+    <div className="mt-4">
+      <div className="text-sm font-medium text-gray-500 mb-4">
+        Suggested follow-up questions per model:
+      </div>
+      <div className="grid grid-cols-3 gap-6">
+        {models.map(model => (
+          <div key={model} className="space-y-3">
+            <div className="font-semibold text-blue-700 pb-2 border-b">
+              {model}
+            </div>
+            {Array.from({ length: maxSuggestions }).map((_, index) => (
+              <div key={index} className="min-h-[40px]">
+                {compareSuggestions[model][index] && (
+                  <button
+                    onClick={() => onSuggestionClick(compareSuggestions[model][index])}
+                    className="w-full text-left px-3 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                  >
+                    {compareSuggestions[model][index]}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, chartData }) => {
   const isAI = message.sender === 'ai';
   
@@ -75,19 +120,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionC
           </div>
         )}
         {isAI && message.compareSuggestions && (
-          <div className="mt-4">
-            <div className="text-sm font-medium text-gray-500 mb-2">
-              Suggested follow-up questions per model:
-            </div>
-            <div className="flex flex-wrap gap-4">
-              {Object.entries(message.compareSuggestions).map(([model, suggestions]) => (
-                <div key={model} className="flex flex-col min-w-[200px]">
-                  <div className="font-semibold text-blue-700 mb-1">{model}</div>
-                  <SuggestionButtons suggestions={suggestions} onSuggestionClick={onSuggestionClick} />
-                </div>
-              ))}
-            </div>
-          </div>
+          <CompareModelSuggestions
+            compareSuggestions={message.compareSuggestions}
+            onSuggestionClick={onSuggestionClick}
+          />
         )}
         {isAI && message.id !== '1' && (
           <div className="mt-4 pt-4 border-t border-gray-200 text-sm text-gray-500">

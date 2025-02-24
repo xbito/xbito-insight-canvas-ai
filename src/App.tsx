@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Message } from './types';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
@@ -76,9 +76,19 @@ export default function App() {
     let chartType: string, topic: string;
 
     if (compareSuggestions) {
-      // Trigger suggestions for all available models in parallel
+      // Get other available models excluding the currently selected one
+      const otherModels = availableModels.filter(m => m !== modelName);
+      // Randomly select 2 additional models
+      const randomModels = otherModels
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 2);
+      
+      // Get suggestions only for the selected model and the 2 random models
+      const modelsToUse = [modelName, ...randomModels];
+      
+      // Get suggestions for only the models we'll display
       const responses = await Promise.all(
-        availableModels.map(m =>
+        modelsToUse.map(m =>
           generateAISuggestionsResponse(
             content,
             m,
@@ -89,8 +99,9 @@ export default function App() {
           )
         )
       );
+      
       // Map responses to models
-      compareSuggestionsObj = availableModels.reduce((acc, m, idx) => {
+      compareSuggestionsObj = modelsToUse.reduce((acc, m, idx) => {
         acc[m] = responses[idx];
         return acc;
       }, {} as Record<string, string[]>);

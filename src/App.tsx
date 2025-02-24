@@ -27,7 +27,7 @@ export default function App() {
   const [companyName, setCompanyName] = useState('');
   const [country, setCountry] = useState("United States"); // Country selector state
   // availableModels drives the model select options and suggestions comparison
-  const availableModels = ["Llama 3.1", "GPT 4o", "o1-mini"];
+  const availableModels = ["Llama 3.1", "GPT 4o", "o1-mini", "gpt-4o-mini", "o1-preview", "gpt-4-turbo", "gpt-3.5-turbo"];
   const [modelName, setModelName] = useState(availableModels[0]);
   // New state for comparing suggestions
   const [compareSuggestions, setCompareSuggestions] = useState(false);
@@ -119,9 +119,12 @@ export default function App() {
     // Fetch chart data based on the suggested chart type (using selected model)
     let chartResult;
     if (chartType === "Time series chart") {
-      chartResult = await generateTimeSeriesData(content, modelName, industry, companyName, country); 
+      // For chart generation, consistently use GPT 4o for any OpenAI model
+      const chartModel = modelName === "Llama 3.1" ? modelName : "GPT 4o";
+      chartResult = await generateTimeSeriesData(content, chartModel, industry, companyName, country); 
     } else {
-      chartResult = await generateBarChartData(content, modelName, industry, companyName, country);
+      const chartModel = modelName === "Llama 3.1" ? modelName : "GPT 4o";
+      chartResult = await generateBarChartData(content, chartModel, industry, companyName, country);
     }
 
     // Create the AI message with generated content, chart data and suggestions/compareSuggestions

@@ -123,7 +123,82 @@ export const generateAISuggestionsResponse = async (
   ]
   const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
 
-  if (modelName === "o1-mini") {
+  if (modelName === "gpt-4o-mini") {
+    console.log('Using gpt-4o-mini for suggestions');
+    const messages = [
+      {
+        role: 'system' as const,
+        content: `${main_system_prompt}
+        The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
+        They must be possible to answer with either bar graphs or time series graphs.
+        Don't instruct the user on what to think, only suggest a short phrase they might say next.
+        Here are some example suggestions: ${example_suggestions.join(', ')}.`
+      },
+      {
+        role: 'user' as const,
+        content: `${formattedInfo}
+        Here is the entire user conversation (for context):
+        ${allUserQueries}
+       
+        The last user query is: "${latestUserQuery}".`
+      }
+    ];
+    const response = await openai.beta.chat.completions.parse({
+      model: "gpt-4o-mini-2024-07-18",
+      messages: messages,
+      response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
+    });
+    return response.choices[0]?.message?.parsed?.suggestions || [];
+  } else if (modelName === "o1-preview" || modelName === "gpt-4-turbo" || modelName === "gpt-3.5-turbo") {
+    console.log(`Using ${modelName} with parsing through gpt-4o-mini`);
+    const actualModel = modelName === "o1-preview" ? "o1-preview-2024-09-12" :
+                       modelName === "gpt-4-turbo" ? "gpt-4-turbo-2024-04-09" :
+                       modelName == "gpt-3.5-turbo" ? "gpt-3.5-turbo-0125": "gpt-3.5-turbo"
+    
+    const messages = [
+      {
+        role: 'user' as const,
+        content: `Instructions:
+        ${main_system_prompt}
+        You are going to give suggestions for follow up prompts to the user based on the user query, industry, and company name.
+        They must be possible to answer with either bar graphs or time series graphs.
+        The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
+        Don't instruct the user on what to think, only suggest a short phrase they might say next.
+        In the suggestions never make a reference to "these brands", the follow up prompts do not have the necessary context to make that reference.
+        Return a JSON object with "suggestions" as an array of single-sentence follow-ups.
+        Example suggestions: ${example_suggestions.join(', ')}.
+          
+        ${formattedInfo}
+        The entire user conversation (for context):
+        ${allUserQueries}
+
+        The last user query is: "${latestUserQuery}".`
+      }
+    ];
+    const firstResponse = await openai.chat.completions.create({
+      model: actualModel,
+      messages
+    });
+    // These models don't support structured responses, so we parse through gpt-4o-mini
+    const rawContent = firstResponse.choices[0].message.content;
+    const parseMessages = [
+      {
+        role: 'system' as const,
+        content: `You are a helpful assistant. Convert the user message into valid JSON matching:
+        { suggestions: string[] }`
+      },
+      {
+        role: 'user' as const,
+        content: rawContent || ''
+      }
+    ];
+    const secondResponse = await openai.beta.chat.completions.parse({
+      model: "gpt-4o-mini",
+      messages: parseMessages,
+      response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
+    }) as { choices: { message: { parsed: { suggestions: string[] } } }[] };
+    return secondResponse.choices[0]?.message?.parsed.suggestions || [];
+  } else if (modelName === "o1-mini") {
     console.log("Using o1-mini for suggestions, GPT 4o for other calls");
     // o1-mini doesn't support system messages, so we have to put everything into 1 user message.
     const messages = [

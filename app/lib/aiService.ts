@@ -1,7 +1,15 @@
 import OpenAI from 'openai';
 import ollama from 'ollama';
+import { zodResponseFormat } from "openai/helpers/zod";
 import { env } from '../config/env';
-import { Message } from './types';
+import { 
+  Message, 
+  SuggestionsSchema, 
+  BarChartResponseSchema, 
+  TimeSeriesResponseSchema,
+  ChatTopicSchema,
+  ChartTypeSchema
+} from './types';
 
 const openai = new OpenAI({
   apiKey: env.OPENAI_API_KEY
@@ -96,6 +104,7 @@ function buildContextText(industry: string, companyName: string, country: string
   return text.trim();
 }
 
+// Simulated AI response generator
 export const generateAISuggestionsResponse = async (
   latestUserQuery: string,
   modelName: string,
@@ -107,7 +116,7 @@ export const generateAISuggestionsResponse = async (
   const example_suggestions = [
     "Show me the top car brands by awareness.",
     "Which coffee shops are most popular with millennials?",
-    "What are the most trusted smartphone brands?",
+    "What are the most trusted smartphone brands globally?",
     "Which fitness app is preferred by Gen Z users?",
   ];
   const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
@@ -117,7 +126,7 @@ export const generateAISuggestionsResponse = async (
       console.log('Using gpt-4o-mini for suggestions');
       const messages = [
         {
-          role: 'system',
+          role: 'system' as const,
           content: `${main_system_prompt}
           The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
           They must be possible to answer with either bar graphs or time series graphs.
@@ -125,7 +134,7 @@ export const generateAISuggestionsResponse = async (
           Here are some example suggestions: ${example_suggestions.join(', ')}.`
         },
         {
-          role: 'user',
+          role: 'user' as const,
           content: `${formattedInfo}
           Here is the entire user conversation (for context):
           ${allUserQueries}
@@ -133,18 +142,112 @@ export const generateAISuggestionsResponse = async (
           The last user query is: "${latestUserQuery}".`
         }
       ];
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages,
-        response_format: { type: "json_object" }
+      const response = await openai.beta.chat.completions.parse({
+        model: "gpt-4o-mini-2024-07-18",
+        messages: messages,
+        response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
       });
-      const parsed = JSON.parse(response.choices[0]?.message?.content || '{"suggestions":[]}');
-      return parsed.suggestions || example_suggestions;
+      return response.choices[0]?.message?.parsed?.suggestions || [];
+    } else if (modelName === "o1-preview" || modelName === "gpt-4-turbo" || modelName === "gpt-3.5-turbo") {
+      console.log(`Using ${modelName} with parsing through gpt-4o-mini`);
+      const actualModel = modelName === "o1-preview" ? "o1-preview-2024-09-12" :
+                         modelName === "gpt-4-turbo" ? "gpt-4-turbo-2024-04-09" :
+                         "gpt-3.5-turbo-0125";
+      
+      const messages = [
+        {
+          role: 'user' as const,
+          content: `Instructions:
+          ${main_system_prompt}
+          You are going to give suggestions for follow up prompts to the user based on the user query, industry, and company name.
+          They must be possible to answer with either bar graphs or time series graphs.
+          The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
+          Don't instruct the user on what to think, only suggest a short phrase they might say next.
+          In the suggestions never make a reference to "these brands", the follow up prompts do not have the necessary context to make that reference.
+          Return a JSON object with "suggestions" as an array of single-sentence follow-ups.
+          Example suggestions: ${example_suggestions.join(', ')}.
+            
+          ${formattedInfo}
+          The entire user conversation (for context):
+          ${allUserQueries}
+  
+          The last user query is: "${latestUserQuery}".`
+        }
+      ];
+      const firstResponse = await openai.chat.completions.create({
+        model: actualModel,
+        messages
+      });
+      // These models don't support structured responses, so we parse through gpt-4o-mini
+      const rawContent = firstResponse.choices[0].message.content;
+      const parseMessages = [
+        {
+          role: 'system' as const,
+          content: `You are a helpful assistant. Convert the user message into valid JSON matching:
+          { suggestions: string[] }`
+        },
+        {
+          role: 'user' as const,
+          content: rawContent || ''
+        }
+      ];
+      const secondResponse = await openai.beta.chat.completions.parse({
+        model: "gpt-4o-mini",
+        messages: parseMessages,
+        response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
+      });
+      return secondResponse.choices[0]?.message?.parsed?.suggestions || [];
+    } else if (modelName === "o1-mini") {
+      console.log("Using o1-mini for suggestions, GPT 4o for other calls");
+      // o1-mini doesn't support system messages, so we have to put everything into 1 user message.
+      const messages = [
+        {
+          role: 'user' as const,
+          content: `Instructions:
+          ${main_system_prompt}
+          You are going to give suggestions for follow up prompts to the user based on the user query, industry, and company name.
+          They must be possible to answer with either bar graphs or time series graphs.
+          The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
+          Don't instruct the user on what to think, only suggest a short phrase they might say next.
+          In the suggestions never make a reference to "these brands", the follow up prompts do not have the necessary context to make that reference.
+          Return a JSON object with "suggestions" as an array of single-sentence follow-ups.
+          Example suggestions: ${example_suggestions.join(', ')}.
+            
+          ${formattedInfo}
+          The entire user conversation (for context):
+          ${allUserQueries}
+  
+          The last user query is: "${latestUserQuery}".`
+        }
+      ];
+      const firstResponse = await openai.chat.completions.create({
+        model: "o1-mini-2024-09-12",
+        messages
+      });
+      // o1-mini doesn't support structured responses, but we can pass the response to GPT 4o to parse it and return the desired format.
+      const rawContent = firstResponse.choices[0].message.content;
+      const parseMessages = [
+        {
+          role: 'system' as const,
+          content: `You are a helpful assistant. Convert the user message into valid JSON matching:
+          { suggestions: string[] }`
+        },
+        {
+          role: 'user' as const,
+          content: rawContent || ''
+        }
+      ];
+      const secondResponse = await openai.beta.chat.completions.parse({
+        model: "gpt-4o-mini",
+        messages: parseMessages,
+        response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
+      });
+      return secondResponse.choices[0]?.message?.parsed?.suggestions || [];
     } else if (modelName === "GPT 4o") {
       console.log('OpenAI for suggestions - GPT 4o');
       const messages = [
         {
-          role: 'system',
+          role: 'system' as const,
           content: `${main_system_prompt}
           The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
           They must be possible to answer with either bar graphs or time series graphs.
@@ -152,7 +255,7 @@ export const generateAISuggestionsResponse = async (
           Here are some example suggestions: ${example_suggestions.join(', ')}.`
         },
         {
-          role: 'user',
+          role: 'user' as const,
           content: `${formattedInfo}
           Here is the entire user conversation (for context):
           ${allUserQueries}
@@ -160,15 +263,40 @@ export const generateAISuggestionsResponse = async (
           The last user query is: "${latestUserQuery}".`
         }
       ];
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages,
-        response_format: { type: "json_object" }
+      const response = await openai.beta.chat.completions.parse({
+        model: "gpt-4o-2024-08-06",
+        messages: messages,
+        response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
       });
-      const parsed = JSON.parse(response.choices[0]?.message?.content || '{"suggestions":[]}');
-      return parsed.suggestions || example_suggestions;
+      return response.choices[0]?.message?.parsed?.suggestions || [];
+    } else if (modelName === "o3-mini") {
+      console.log("o3-mini not implemented yet");
+      const messages = [
+        {
+          role: 'system' as const,
+          content: `${main_system_prompt}
+          The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
+          They must be possible to answer with either bar graphs or time series graphs.
+          Don't instruct the user on what to think, only suggest a short phrase they might say next.
+          Here are some example suggestions: ${example_suggestions.join(', ')}.`
+        },
+        {
+          role: 'user' as const,
+          content: `${formattedInfo}
+          Here is the entire user conversation (for context):
+          ${allUserQueries}
+         
+          The last user query is: "${latestUserQuery}".`
+        }
+      ];
+      const response = await openai.beta.chat.completions.parse({
+        model: "o3-mini-2025-1-31",
+        messages: messages,
+        response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
+      });
+      return response.choices[0]?.message?.parsed?.suggestions || [];
     } else {
-      console.log("Using Llama for suggestions");
+      console.log("Llama for suggestions");
       const response = await ollama.chat({
         model: 'llama3.1',
         format: {'type': 'object', 'properties': {'suggestions': {'type': 'array', 'items': {'type': 'string'}}}},
@@ -192,6 +320,7 @@ export const generateAISuggestionsResponse = async (
         ]
       });
       const json_data = JSON.parse(response.message.content);
+      // If the response came with suggestions in an unexpected format, like a list of objects rather than a list of phrases, try to extract the phrases:
       if (json_data.suggestions && json_data.suggestions.length > 0 && typeof(json_data.suggestions[0]) === 'object') {
         json_data.suggestions = json_data.suggestions.map((suggestion: { phrase: string }) => suggestion.phrase);
       }
@@ -213,11 +342,11 @@ export const generateBarChartData = async (
   const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
   
   try {
-    if (modelName === "GPT 4o") {
+    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
       console.log('Using GPT 4o for bar chart data');
       const messages = [
         {
-          role: 'system',
+          role: 'system' as const,
           content: `${main_system_prompt}
           We have a TypeScript interface ChartData with strict shape requirements. 
           In the structure you return you must provide a "content" member introducing the chart.
@@ -225,42 +354,20 @@ export const generateBarChartData = async (
           Each label's data field is a percentage (0-100). 
           Strongly prefer real brand names to generic ones.
           Never make up brand names.
-          Never return "Brand A", "Brand B", etc.
-          
-          The response must be a JSON object with this exact structure:
-          {
-            "content": "Description of what the chart shows",
-            "chartData": {
-              "labels": ["Brand1", "Brand2", ...],
-              "title": "Chart Title",
-              "dateRange": "Time period covered",
-              "demographic": "Target audience",
-              "datasets": [{
-                "label": "Metric name",
-                "data": [number, number, ...],
-                "backgroundColor": ["rgba(255,99,132,0.5)", ...],
-                "borderColor": ["rgba(255,99,132,1)", ...],
-                "borderWidth": 1
-              }]
-            }
-          }`
+          Never return "Brand A", "Brand B", etc.`
         },
         {
-          role: 'user',
+          role: 'user' as const,
           content: `${formattedInfo}
           The last user query is: "${userQuery}".`
         }
       ];
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
+      const response = await openai.beta.chat.completions.parse({
+        model: "gpt-4o-2024-08-06",
         messages,
-        response_format: { type: "json_object" }
+        response_format: zodResponseFormat(BarChartResponseSchema, "chartData"),
       });
-      const parsed = JSON.parse(response.choices[0]?.message?.content || '{}');
-      if (!parsed.content || !parsed.chartData) {
-        throw new Error('Invalid response format from GPT-4');
-      }
-      return parsed;
+      return response.choices[0].message.parsed;
     } else {
       console.log('Using Llama for bar chart data');
       const resp = await ollama.chat({
@@ -314,7 +421,7 @@ export const generateBarChartData = async (
 
             Please produce bar chart data with up to 10 labels each corresponding to a brand.
             Important: The data array should contain direct numbers, not arrays of numbers.
-            Important: backgroundColor and borderColor should each be a single array for all bars.
+            Important: backgroundColor and borderColor should each be a single array for all bars, not individual arrays per bar.
             Generate fictional but believable data.
             Strongly prefer real brand names to generic ones.
             Never make up brand names.
@@ -361,51 +468,29 @@ export const generateTimeSeriesData = async (
   const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
   
   try {
-    if (modelName === "GPT 4o") {
+    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
       console.log('Using GPT 4o for time series data');
       const messages = [
         {
-          role: 'system',
+          role: 'system' as const,
           content: `${main_system_prompt}
-          In the structure you return you must provide a "content" member introducing the chart.
+          In the structure you return you must provide a "content" member introducing the chart
           We have a TypeScript interface TimeSeriesData with strict shape requirements. 
           Return a plausible time-series dataset. 
-          Strongly prefer real brand names to generic ones.
-          
-          The response must be a JSON object with this exact structure:
-          {
-            "content": "Description of what the chart shows",
-            "chartData": {
-              "labels": ["Jan", "Feb", ...],
-              "title": "Chart Title",
-              "dateRange": "Time period covered",
-              "demographic": "Target audience",
-              "datasets": [{
-                "label": "Brand name",
-                "data": [number, number, ...],
-                "backgroundColor": "rgba(255,99,132,0.2)",
-                "borderColor": "rgba(255,99,132,1)",
-                "borderWidth": 2
-              }]
-            }
-          }`
+          Strongly prefer real brand names to generic ones.`
         },
         {
-          role: 'user',
+          role: 'user' as const,
           content: `${formattedInfo}
           The last user query is: "${userQuery}".`
         }
       ];
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
+      const response = await openai.beta.chat.completions.parse({
+        model: "gpt-4o-2024-08-06",
         messages,
-        response_format: { type: "json_object" }
+        response_format: zodResponseFormat(TimeSeriesResponseSchema, "chartData"),
       });
-      const parsed = JSON.parse(response.choices[0]?.message?.content || '{}');
-      if (!parsed.content || !parsed.chartData) {
-        throw new Error('Invalid response format from GPT-4');
-      }
-      return parsed;
+      return response.choices[0].message.parsed;
     } else {
       console.log('Using Llama for time series data');
       const resp = await ollama.chat({
@@ -463,6 +548,7 @@ export const generateTimeSeriesData = async (
             Important: Use proper RGBA color format (e.g. "rgba(255, 99, 132, 0.2)" for background, "rgba(255, 99, 132, 1)" for border).
             Generate fictional but believable data.
             Strongly prefer real brand names to generic ones.
+            Never make up brand names.
             
             ${formattedInfo}
             The last user query is: "${userQuery}".
@@ -514,27 +600,26 @@ export const determineChatTopic = async (
 ) => {
   const formattedInfo = buildContextText(industry, companyName, country);
   try {
-    if (modelName === "GPT 4o") {
+    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
       console.log('Using GPT 4o for topic');
+      // Use OpenAI
       const messages = [
         {
-          role: 'system',
+          role: 'system' as const,
           content: `${main_system_prompt}
-          You will suggest a short topic of 5 words summarizing the entire user conversation so it can be displayed in the chat tab.
-          Return a JSON object with a "topic" property containing your suggestion.`
+          You will suggest a short topic of 5 words summarizing the entire user conversation so it can be displayed in the chat tab.`
         },
         {
-          role: 'user',
+          role: 'user' as const,
           content: `${formattedInfo}User conversation: "${allUserMessages}".`
         }
       ];
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages,
-        response_format: { type: "json_object" }
+      const response = await openai.beta.chat.completions.parse({
+        model: 'gpt-4o-2024-08-06',
+        messages: messages,
+        response_format: zodResponseFormat(ChatTopicSchema, 'topic'),
       });
-      const parsed = JSON.parse(response.choices[0]?.message?.content || '{"topic":"Brand Sentiment Analysis Chat"}');
-      return parsed.topic || 'Brand Sentiment Analysis Chat';
+      return response.choices[0]?.message?.parsed?.topic || 'Brand Sentiment Analysis Chat';
     } else {
       console.log('Using Llama for topic');
       const response = await ollama.chat({
@@ -571,29 +656,28 @@ export const determineChartType = async (
 ) => {
   const formattedInfo = buildContextText(industry, companyName, country);
   try {
-    if (modelName === "GPT 4o") {
+    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
       console.log('Using GPT 4o for chart type');
+      // Use OpenAI
       const messages = [
         {
-          role: 'system',
+          role: 'system' as const,
           content: `${main_system_prompt}
           You will suggest a chart type based on the user query, industry, and company name.
-          The only options you have are "Bar chart" or "Time series chart".
-          Return a JSON object with a "chartType" property containing your suggestion.`
+          The only options you have are "Bar chart" or "Time series chart".`
         },
         {
-          role: 'user',
+          role: 'user' as const,
           content: `${formattedInfo}
           The last user query is: "${userQuery}".`
         }
       ];
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages,
-        response_format: { type: "json_object" }
+      const response = await openai.beta.chat.completions.parse({
+        model: 'gpt-4o-2024-08-06',
+        messages: messages,
+        response_format: zodResponseFormat(ChartTypeSchema, 'chartType'),
       });
-      const parsed = JSON.parse(response.choices[0]?.message?.content || '{"chartType":"Bar chart"}');
-      return parsed.chartType || 'Bar chart';
+      return response.choices[0]?.message?.parsed?.chartType || 'Bar chart';
     } else {
       console.log('Using Llama for chart type');
       const response = await ollama.chat({

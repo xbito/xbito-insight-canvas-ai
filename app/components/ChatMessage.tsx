@@ -1,27 +1,5 @@
 import { Message, ChartData, TimeSeriesData } from '../lib/types';
-import { Bar, Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-  PointElement
-} from 'chart.js';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend
-);
+import { DataVisualization } from './DataVisualization';
 
 interface ChatMessageProps {
   message: Message;
@@ -30,8 +8,6 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, onSuggestionClick, chartData }: ChatMessageProps) {
-  const isBar = chartData && 'backgroundColor' in chartData.datasets[0] && Array.isArray(chartData.datasets[0].backgroundColor);
-
   return (
     <div className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
       <div className={`max-w-3xl rounded-lg p-4 ${
@@ -40,47 +16,9 @@ export function ChatMessage({ message, onSuggestionClick, chartData }: ChatMessa
         <p className="mb-2">{message.content}</p>
         
         {/* Chart Visualization */}
-        {chartData && (
-          <div className="w-full h-64 bg-white rounded-lg p-4 mb-4">
-            {isBar ? (
-              <Bar
-                data={{
-                  labels: chartData.labels,
-                  datasets: chartData.datasets as ChartData['datasets'],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    title: {
-                      display: true,
-                      text: chartData.title,
-                    },
-                    legend: {
-                      position: 'top' as const,
-                    },
-                  },
-                }}
-              />
-            ) : (
-              <Line
-                data={{
-                  labels: chartData.labels,
-                  datasets: chartData.datasets as TimeSeriesData['datasets'],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    title: {
-                      display: true,
-                      text: chartData.title,
-                    },
-                    legend: {
-                      position: 'top' as const,
-                    },
-                  },
-                }}
-              />
-            )}
+        {message.chartData && (
+          <div className="my-4">
+            <DataVisualization data={message.chartData} />
           </div>
         )}
 

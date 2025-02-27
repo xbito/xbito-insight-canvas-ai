@@ -1,46 +1,85 @@
-# Brand Sentiment Chat AI Demo
+# Data Chat AI - Next.js Application
 
-## Overview
-This project provides a React-based chat interface that leverages AI to analyze brand sentiment and generate interactive charts. It includes:
-• AI-driven brand sentiment analysis  
-• Dynamic bar and time series visualizations using Chart.js  
-• Flexible integration with OpenAI or local Llama-based APIs
+This project is a data visualization and AI-powered chat application built with Next.js, enabling both frontend and backend functionality in a single codebase.
 
-## Requirements
-• Node.js 16+  
-• Yarn or npm
+## Features
 
-## Installation
-1. Clone this repository.  
-2. Run npm install or yarn install to install dependencies.
+- AI-powered conversational interface for data analysis
+- Dynamic data visualizations with Chart.js
+- Multiple AI model support (Llama 3.1, GPT 4o, etc.)
+- Industry-specific data analysis
+- Full-stack application with Next.js API routes for backend functionality
 
-## Configuration
-• Copy your OpenAI or local Llama API credentials into the appropriate .env or config files.  
-• Toggle "Use OpenAI" or "Use o1 for suggestions" within the app’s UI.
+## Getting Started
 
-## Usage
-1. Start the development server with npm start or yarn start.  
-2. Navigate to http://localhost:3000 in your browser.  
-3. Ask questions about brand sentiment, and view the generated charts.
+### Prerequisites
 
-## Architecture
-• Frontend: TypeScript + React, with a chat interface.  
-• Charting: Bar and Line charts via Chart.js.  
-• API Interaction: Switchable between OpenAI or local Llama-based endpoints.
+- Node.js 18+ (recommended)
+- NPM or Yarn
 
-## Troubleshooting
-• Check Node.js version (16+).  
-• Verify that all dependencies (React, Chart.js, etc.) are installed properly.  
-• Ensure valid API credentials for OpenAI or Llama.  
+### Installation
 
-## Future Plans
-• Further customization of prompts.  
-• Expanded data modeling and visualizations.
+1. Clone the repository
+```bash
+git clone <repository-url>
+cd mc-interview-ai-demo
+```
 
-## Contributing
-1. Fork the repository.  
-2. Create a feature branch.  
-3. Submit a pull request for review.
+2. Install dependencies
+```bash
+npm install
+```
+
+3. Set up environment variables
+   - Copy `.env.local.example` to `.env.local`
+   - Add your API keys (OpenAI, etc.) to `.env.local`
+
+4. Start the development server
+```bash
+npm run dev
+```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Project Structure
+
+- `/app` - Next.js App Router pages and layouts
+  - `/api` - API routes (backend code)
+- `/src` - Source code
+  - `/components` - React components
+  - `/config` - Configuration files
+  - Other utility files and services
+
+## Development
+
+### Adding New API Routes
+
+To add a new API endpoint, create a new folder in `/app/api/` and add a `route.ts` file with the appropriate HTTP method handlers:
+
+```typescript
+// Example: /app/api/example/route.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: 'Example API is working!',
+    timestamp: new Date().toISOString(),
+  });
+}
+```
+
+## Deployment
+
+This Next.js application can be deployed to various platforms like Vercel, Netlify, or any hosting service that supports Node.js applications.
+
+### Deploying to Vercel
+
+```bash
+npm install -g vercel
+vercel
+```
 
 ## License
-MIT
+
+This project is licensed under the MIT License.

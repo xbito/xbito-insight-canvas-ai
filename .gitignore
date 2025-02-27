@@ -7,10 +7,18 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 dist
 dist-ssr
 *.local
+
+# Next.js
+/.next/
+/out/
+/build
+.next
+next-env.d.ts
 
 # Editor directories and files
 .vscode/*
@@ -23,5 +31,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Secrets and env files
 secrets/*
 .env
+.env*.local
+
+# Vercel
+.vercel

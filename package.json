@@ -1,17 +1,18 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "data-chat-ai-nextjs",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "0.1.0",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
+    "@t3-oss/env-nextjs": "^0.12.0",
     "chart.js": "^4.4.1",
     "lucide-react": "^0.344.0",
+    "next": "^14.2.0",
     "ollama": "^0.5.11",
     "openai": "^4.79.1",
     "react": "^18.3.1",
@@ -21,11 +22,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@types/node": "^20.17.19",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
     "eslint": "^9.9.1",
+    "eslint-config-next": "^14.2.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",
     "globals": "^15.9.0",

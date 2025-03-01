@@ -1,9 +1,11 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import LayoutContent from './components/LayoutContent'
+import { AppContextProvider } from './lib/ContextProvider'
 
 export const metadata: Metadata = {
-  title: 'Data Chat AI',
-  description: 'AI-powered data visualization and chat application',
+  title: 'Data Insights Platform',
+  description: 'AI-powered data visualization, dashboarding and chat application',
 }
 
 export default function RootLayout({
@@ -13,7 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="bg-gray-100">
+        <AppContextProvider>
+          <LayoutContent>
+            {children}
+          </LayoutContent>
+        </AppContextProvider>
+      </body>
     </html>
   )
 }

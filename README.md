@@ -45,10 +45,9 @@ npm run dev
 
 - `/app` - Next.js App Router pages and layouts
   - `/api` - API routes (backend code)
-- `/src` - Source code
   - `/components` - React components
   - `/config` - Configuration files
-  - Other utility files and services
+  - `/lib` - Utility files and services
 
 ## Development
 

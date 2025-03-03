@@ -15,7 +15,9 @@ export default function LayoutContent({
     companyName,
     setCompanyName,
     country,
-    setCountry
+    setCountry,
+    userPersona,
+    setUserPersona
   } = useAppContext();
 
   return (
@@ -58,6 +60,27 @@ export default function LayoutContent({
             <option value="Canada">Canada</option>
             <option value="Mexico">Mexico</option>
             <option value="United Kingdom">United Kingdom</option>
+          </select>
+
+          {/* User Persona Selector */}
+          <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="personaSelect">User Persona</label>
+          <select
+            id="personaSelect"
+            value={userPersona}
+            onChange={(e) => setUserPersona(e.target.value)}
+            className="mb-4 block w-full border-gray-300 rounded-md shadow-sm"
+          >
+            <option value="">Select Persona</option>
+            <option value="research-analyst">Research Analyst</option>
+            <option value="marketing-brand-manager">Marketing & Brand Manager</option>
+            <option value="senior-executive">Senior Executive</option>
+            <option value="communications-pr">Communications or PR</option>
+            <option value="product-manager">Product Manager</option>
+            <option value="market-intelligence">Market Intelligence</option>
+            <option value="customer-insights">Customer Insights</option>
+            <option value="sales-representative">Sales Representative</option>
+            <option value="strategy-operations">Strategy & Operations</option>
+            <option value="agency-consultant">Agency or External Consultant</option>
           </select>
 
           {/* Industry Selector */}

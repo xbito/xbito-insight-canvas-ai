@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
-import { Industry } from './types';
+import { Industry, UserPersona } from './types';
 
 interface AppContextType {
   industry: string;
@@ -10,6 +10,8 @@ interface AppContextType {
   setCompanyName: (name: string) => void;
   country: string;
   setCountry: (country: string) => void;
+  userPersona: string;
+  setUserPersona: (persona: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -18,6 +20,7 @@ export function AppContextProvider({ children }: { children: React.ReactNode }) 
   const [industry, setIndustry] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [country, setCountry] = useState("United States");
+  const [userPersona, setUserPersona] = useState('');
 
   return (
     <AppContext.Provider
@@ -28,6 +31,8 @@ export function AppContextProvider({ children }: { children: React.ReactNode }) 
         setCompanyName,
         country,
         setCountry,
+        userPersona,
+        setUserPersona,
       }}
     >
       {children}

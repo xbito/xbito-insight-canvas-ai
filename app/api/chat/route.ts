@@ -15,7 +15,7 @@ const availableModels = ["Llama 3.1", "GPT 4o", "o1-mini", "gpt-4o-mini", "o1-pr
 export async function POST(request: NextRequest) {
   try {
     const { message, context } = await request.json();
-    const { industry, companyName, country, modelName, previousMessages } = context;
+    const { industry, companyName, country, userPersona, modelName, previousMessages } = context;
     
     // Extract previous user messages for context
     const allUserQueries = previousMessages
@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
               industry || '',
               companyName || '',
               country || 'United States',
-              updatedAllUserQueries
+              updatedAllUserQueries,
+              userPersona || ''
             )
           )
         );
@@ -69,8 +70,8 @@ export async function POST(request: NextRequest) {
 
         // Use the currently selected model for the remaining calls
         [chartType, topic] = await Promise.all([
-          determineChartType(message, industry || '', companyName || '', country || 'United States', modelName),
-          determineChatTopic(updatedAllUserQueries, industry || '', companyName || '', country || 'United States', modelName)
+          determineChartType(message, industry || '', companyName || '', country || 'United States', modelName, userPersona || ''),
+          determineChatTopic(updatedAllUserQueries, industry || '', companyName || '', country || 'United States', modelName, userPersona || '')
         ]);
       } else {
         // Standard behavior with a single-model suggestion call
@@ -81,10 +82,11 @@ export async function POST(request: NextRequest) {
             industry || '',
             companyName || '',
             country || 'United States',
-            updatedAllUserQueries
+            updatedAllUserQueries,
+            userPersona || ''
           ),
-          determineChartType(message, industry || '', companyName || '', country || 'United States', modelName), 
-          determineChatTopic(updatedAllUserQueries, industry || '', companyName || '', country || 'United States', modelName)
+          determineChartType(message, industry || '', companyName || '', country || 'United States', modelName, userPersona || ''), 
+          determineChatTopic(updatedAllUserQueries, industry || '', companyName || '', country || 'United States', modelName, userPersona || '')
         ]);
       }
 
@@ -101,7 +103,8 @@ export async function POST(request: NextRequest) {
           modelName === "Llama 3.1" ? modelName : "GPT 4o",
           industry || '',
           companyName || '',
-          country || 'United States'
+          country || 'United States',
+          userPersona || ''
         );
       } else {
         chartResult = await generateBarChartData(
@@ -109,7 +112,8 @@ export async function POST(request: NextRequest) {
           modelName === "Llama 3.1" ? modelName : "GPT 4o",
           industry || '',
           companyName || '',
-          country || 'United States'
+          country || 'United States',
+          userPersona || ''
         );
       }
 

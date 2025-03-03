@@ -55,6 +55,18 @@ export type Industry =
   | 'sports'
   | 'appliances';
 
+export type UserPersona =
+  | 'research-analyst'
+  | 'marketing-brand-manager'
+  | 'senior-executive'
+  | 'communications-pr'
+  | 'product-manager'
+  | 'market-intelligence'
+  | 'customer-insights'
+  | 'sales-representative'
+  | 'strategy-operations'
+  | 'agency-consultant';
+
 export const SuggestionsSchema = z.object({
   suggestions: z.array(z.string()),
 });

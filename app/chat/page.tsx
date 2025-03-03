@@ -17,6 +17,7 @@ async function sendChatMessage(message: string, context: {
   industry?: string;
   companyName?: string;
   country?: string;
+  userPersona?: string;
   modelName: string;
   previousMessages: Message[];
   compareSuggestions?: boolean;
@@ -42,7 +43,7 @@ const defaultSuggestions = [
 ];
 
 export default function ChatPage() {
-  const { industry, companyName, country } = useAppContext();
+  const { industry, companyName, country, userPersona } = useAppContext();
   
   // Model-related state
   const availableModels = ["Llama 3.1", "GPT 4o", "o1-mini", "gpt-4o-mini", "o1-preview", "gpt-4-turbo", "gpt-3.5-turbo"];
@@ -81,6 +82,7 @@ export default function ChatPage() {
         industry,
         companyName,
         country,
+        userPersona,
         modelName,
         previousMessages: messages,
         compareSuggestions: compareSuggestions

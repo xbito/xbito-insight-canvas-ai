@@ -10,6 +10,7 @@ import {
   ChatTopicSchema,
   ChartTypeSchema
 } from './types';
+import { personaDefinitions } from './personaDefinitions';
 
 const openai = new OpenAI({
   apiKey: env.OPENAI_API_KEY
@@ -90,7 +91,7 @@ trust_score (numeric) - how much do you trust this brand?
 loyalty_score (numeric) - how loyal are you to this brand?
 engagement_score (numeric) - how engaged are you with this brand?`;
 
-function buildContextText(industry: string, companyName: string, country: string) {
+function buildContextText(industry: string, companyName: string, country: string, userPersona?: string) {
   let text = '';
   if (industry) {
     text += `Industry: "${industry}". `;
@@ -101,6 +102,33 @@ function buildContextText(industry: string, companyName: string, country: string
   if (country) {
     text += `Country: "${country}". `;
   }
+  
+  // Add detailed persona information if available
+  if (userPersona && personaDefinitions[userPersona]) {
+    const persona = personaDefinitions[userPersona];
+    text += `\n\nUSER PERSONA: ${persona.displayName}\n`;
+    
+    text += "\nRole & Goals:\n";
+    persona.description.roleGoals.forEach(goal => {
+      text += `- ${goal}\n`;
+    });
+    
+    text += "\nMotivation:\n";
+    persona.description.motivation.forEach(motivation => {
+      text += `- ${motivation}\n`;
+    });
+    
+    text += "\nChallenges:\n";
+    persona.description.challenges.forEach(challenge => {
+      text += `- ${challenge}\n`;
+    });
+    
+    text += "\nKey Needs:\n";
+    persona.description.keyNeeds.forEach(need => {
+      text += `- ${need}\n`;
+    });
+  }
+  
   return text.trim();
 }
 
@@ -111,7 +139,8 @@ export const generateAISuggestionsResponse = async (
   industry?: string,
   companyName?: string,
   country?: string,
-  allUserQueries?: string
+  allUserQueries?: string,
+  userPersona?: string
 ): Promise<string[]> => {
   const example_suggestions = [
     "Show me the top car brands by awareness.",
@@ -119,7 +148,7 @@ export const generateAISuggestionsResponse = async (
     "What are the most trusted smartphone brands globally?",
     "Which fitness app is preferred by Gen Z users?",
   ];
-  const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
+  const formattedInfo = buildContextText(industry || '', companyName || '', country || '', userPersona || '');
 
   try {
     if (modelName === "gpt-4o-mini") {
@@ -337,9 +366,10 @@ export const generateBarChartData = async (
   modelName: string,
   industry?: string,
   companyName?: string,
-  country?: string 
+  country?: string,
+  userPersona?: string
 ) => {
-  const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
+  const formattedInfo = buildContextText(industry || '', companyName || '', country || '', userPersona || '');
   
   try {
     if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
@@ -463,9 +493,10 @@ export const generateTimeSeriesData = async (
   modelName: string,
   industry?: string,
   companyName?: string,
-  country?: string 
+  country?: string,
+  userPersona?: string
 ) => {
-  const formattedInfo = buildContextText(industry || '', companyName || '', country || '');
+  const formattedInfo = buildContextText(industry || '', companyName || '', country || '', userPersona || '');
   
   try {
     if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
@@ -596,9 +627,10 @@ export const determineChatTopic = async (
   industry: string,
   companyName: string,
   country: string,
-  modelName: string
+  modelName: string,
+  userPersona?: string
 ) => {
-  const formattedInfo = buildContextText(industry, companyName, country);
+  const formattedInfo = buildContextText(industry, companyName, country, userPersona);
   try {
     if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
       console.log('Using GPT 4o for topic');
@@ -652,9 +684,10 @@ export const determineChartType = async (
   industry: string,
   companyName: string,
   country: string,
-  modelName: string
+  modelName: string,
+  userPersona?: string
 ) => {
-  const formattedInfo = buildContextText(industry, companyName, country);
+  const formattedInfo = buildContextText(industry, companyName, country, userPersona);
   try {
     if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
       console.log('Using GPT 4o for chart type');

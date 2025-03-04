@@ -1,13 +1,13 @@
-# Data Chat AI - Next.js Application
+# Insight Canvas AI
 
-This project is a data visualization and AI-powered chat application built with Next.js, enabling both frontend and backend functionality in a single codebase.
+A powerful platform for Conversational Analytics for Brand Intelligence, enabling detailed brand sentiment analysis through intuitive visualization and AI-guided insights.
 
 ## Features
 
-- AI-powered conversational interface for data analysis
+- AI-powered conversational interface for brand sentiment analysis
 - Dynamic data visualizations with Chart.js
 - Multiple AI model support (Llama 3.1, GPT 4o, etc.)
-- Industry-specific data analysis
+- Industry-specific brand sentiment analysis
 - Full-stack application with Next.js API routes for backend functionality
 
 ## Getting Started

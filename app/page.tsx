@@ -59,9 +59,9 @@ export default function Home() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Welcome to Data Insights</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Welcome to Insight Canvas AI</h1>
           <p className="text-gray-600 mt-2">
-            Create data visualizations, analyze market trends, and get AI-powered insights
+            Conversational Analytics for Brand Intelligence
           </p>
         </div>
         

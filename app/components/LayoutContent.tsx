@@ -28,7 +28,7 @@ export default function LayoutContent({
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <BarChart className="w-6 h-6 text-blue-600" />
-            <h1 className="text-xl font-semibold text-gray-900">Data Insights</h1>
+            <h1 className="text-xl font-semibold text-gray-900">Insight Canvas AI</h1>
           </div>
         </div>
         

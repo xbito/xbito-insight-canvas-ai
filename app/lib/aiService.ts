@@ -134,7 +134,6 @@ function buildContextText(industry: string, companyName: string, country: string
       text += `- ${need}\n`;
     });
   }
-  
   return text.trim();
 }
 

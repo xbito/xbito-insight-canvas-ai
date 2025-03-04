@@ -4,8 +4,8 @@ import LayoutContent from './components/LayoutContent'
 import { AppContextProvider } from './lib/ContextProvider'
 
 export const metadata: Metadata = {
-  title: 'Data Insights Platform',
-  description: 'AI-powered data visualization, dashboarding and chat application',
+  title: 'Insight Canvas AI',
+  description: 'Conversational Analytics for Brand Intelligence',
 }
 
 export default function RootLayout({

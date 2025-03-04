@@ -17,28 +17,48 @@ To run this project you will need an access key from an OpenAI account with cred
 
 *None of the data this application may show is usable, it is all fake. There is no dataset behind it.*
 
+## Key Features
 
-## Features
+- **AI-powered Conversational Interface**: Interact with your brand data through natural language queries
+- **Dynamic Data Visualizations**: Real-time chart generation using Chart.js
+- **Multiple AI Model Support**: Includes support for Llama 3.1 and GPT-4o
+- **Industry-specific Analysis**: Tailored insights for various market sectors
+- **Automated Dashboard Creation**: Generate complete dashboards from simple objective statements
+- **Full-stack Architecture**: Built on Next.js with robust API functionality
 
-- AI-powered conversational interface for brand sentiment analysis
-- Dynamic data visualizations with Chart.js
-- Multiple AI model support (Llama 3.1, GPT 4o, etc.)
-- Industry-specific brand sentiment analysis
-- Full-stack application with Next.js API routes for backend functionality
+## Screenshots
+
+### Conversational Analytics Interface
+
+![Conversational Analytics Interface](./docs/images/conversation-interface.png)
+
+*The AI-powered conversational interface allows users to get suggestions to further their exploration of the dataset.*
+
+![Conversational Analytics Interface](./docs/images/suggestions-compare.png)
+
+*The app also supports using multiple models to compare the suggestions.*
+
+### Auto-generated Dashboard
+
+![Auto-generated Dashboard](./docs/images/dashboard-example.png)
+
+*Example of a dashboard automatically generated from a business objective statement.*
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+ (recommended)
-- NPM or Yarn
+- NPM
+- OpenAI API key
+- Ollama with Llama 3.1 model installed locally
 
 ### Installation
 
 1. Clone the repository
 ```bash
-git clone <repository-url>
-cd mc-interview-ai-demo
+git clone https://github.com/yourusername/xbito-insight-canvas-ai.git
+cd xbito-insight-canvas-ai
 ```
 
 2. Install dependencies
@@ -48,7 +68,11 @@ npm install
 
 3. Set up environment variables
    - Copy `.env.local.example` to `.env.local`
-   - Add your API keys (OpenAI, etc.) to `.env.local`
+   - Add your API keys and configuration:
+   ```
+   OPENAI_API_KEY=your_openai_key_here
+   OLLAMA_BASE_URL=http://localhost:11434
+   ```
 
 4. Start the development server
 ```bash
@@ -57,44 +81,35 @@ npm run dev
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Project Structure
+## Supported AI Models
 
-- `/app` - Next.js App Router pages and layouts
-  - `/api` - API routes (backend code)
-  - `/components` - React components
-  - `/config` - Configuration files
-  - `/lib` - Utility files and services
+This application currently supports the following AI models:
 
-## Development
+- **GPT-4o** - OpenAI's latest multimodal model for advanced natural language processing and reasoning
+- **Llama 3.1 (8B)** - Meta's open-source language model running locally through Ollama
+- **Llama 3.1 (70B)** - The larger version of Meta's language model for more complex tasks
 
-### Adding New API Routes
 
-To add a new API endpoint, create a new folder in `/app/api/` and add a `route.ts` file with the appropriate HTTP method handlers:
+### Environment Variables
 
-```typescript
-// Example: /app/api/example/route.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+Make sure to configure the following environment variables in your production environment:
 
-export async function GET(request: NextRequest) {
-  return NextResponse.json({
-    message: 'Example API is working!',
-    timestamp: new Date().toISOString(),
-  });
-}
-```
+- `OPENAI_API_KEY`
+- `OLLAMA_BASE_URL` (if using Ollama in production)
+- `NODE_ENV=production`
 
-## Deployment
+## Troubleshooting
 
-This Next.js application can be deployed to various platforms like Vercel, Netlify, or any hosting service that supports Node.js applications.
+### Common Issues
 
-### Deploying to Vercel
+- **API Connection Errors**: Ensure your API keys are correctly set in `.env.local`
+- **Ollama Connection Issues**: Check that Ollama is running locally on port 11434
+- **Model Loading Problems**: Verify that you've downloaded the required models in Ollama
 
-```bash
-npm install -g vercel
-vercel
-```
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.

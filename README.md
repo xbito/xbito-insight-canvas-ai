@@ -2,6 +2,22 @@
 
 A powerful platform for Conversational Analytics for Brand Intelligence, enabling detailed brand sentiment analysis through intuitive visualization and AI-guided insights.
 
+## Disclaimer
+
+This project is a playground for me. While in my job hunt a company that is in the market research space released
+some new features which inspired me to think about extending what they have released. We then discussed broader
+strategy and as part of my suggestions I proposed some of the features that now this project exposes.
+
+But, it's not an actual project, it's more an experiment to test the limits of different AI models in two specific
+tasks, first the exploration / discovery of a brand sentiment and audience demographics dataset, and second
+the automatic creation of full dashboards out of an objective statement. Both features look to expand the user
+base of the theoretical platform functionality like this would live on.
+
+To run this project you will need an access key from an OpenAI account with credits, and a locally running Ollama with Llama 3.1 running.
+
+*None of the data this application may show is usable, it is all fake. There is no dataset behind it.*
+
+
 ## Features
 
 - AI-powered conversational interface for brand sentiment analysis

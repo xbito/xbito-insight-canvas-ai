@@ -57,7 +57,7 @@ To run this project you will need an access key from an OpenAI account with cred
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/xbito-insight-canvas-ai.git
+git clone https://github.com/xbito/xbito-insight-canvas-ai.git
 cd xbito-insight-canvas-ai
 ```
 

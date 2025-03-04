@@ -10,7 +10,7 @@ import {
 import { Message } from '../../lib/types';
 
 // Available models list for comparison (using the same list as in the frontend)
-const availableModels = ["Llama 3.1", "GPT 4o", "o1-mini", "gpt-4o-mini", "o1-preview", "gpt-4-turbo", "gpt-3.5-turbo"];
+const availableModels = ["Llama 3.1", "GPT 4o", "o1-mini", "gpt-4o-mini", "o1-preview", "gpt-4-turbo", "gpt-3.5-turbo", "gpt-4.5-preview"];
 
 export async function POST(request: NextRequest) {
   try {

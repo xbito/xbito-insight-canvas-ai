@@ -182,6 +182,32 @@ export const generateAISuggestionsResponse = async (
         response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
       });
       return response.choices[0]?.message?.parsed?.suggestions || [];
+    } else if (modelName === "gpt-4.5-preview") {
+      console.log('Using gpt-4.5-preview for suggestions');
+      const messages = [
+        {
+          role: 'system' as const,
+          content: `${main_system_prompt}
+          The suggestions you give should be single-sentence strings that generate more graphs to analyze brand sentiment and audience data. 
+          They must be possible to answer with either bar graphs or time series graphs.
+          Don't instruct the user on what to think, only suggest a short phrase they might say next.
+          Here are some example suggestions: ${example_suggestions.join(', ')}.`
+        },
+        {
+          role: 'user' as const,
+          content: `${formattedInfo}
+          Here is the entire user conversation (for context):
+          ${allUserQueries}
+         
+          The last user query is: "${latestUserQuery}".`
+        }
+      ];
+      const response = await openai.beta.chat.completions.parse({
+        model: "gpt-4.5-preview",
+        messages: messages,
+        response_format: zodResponseFormat(SuggestionsSchema, "suggestions"),
+      });
+      return response.choices[0]?.message?.parsed?.suggestions || [];
     } else if (modelName === "o1-preview" || modelName === "gpt-4-turbo" || modelName === "gpt-3.5-turbo") {
       console.log(`Using ${modelName} with parsing through gpt-4o-mini`);
       const actualModel = modelName === "o1-preview" ? "o1-preview-2024-09-12" :
@@ -377,8 +403,8 @@ export const generateBarChartData = async (
   const formattedInfo = buildContextText(industry || '', companyName || '', country || '', userPersona || '');
   
   try {
-    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
-      console.log('Using GPT 4o for bar chart data');
+    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini" || modelName === "gpt-4.5-preview") {
+      console.log('Using GPT 4o or gpt-4.5-preview for bar chart data');
       const messages = [
         {
           role: 'system' as const,
@@ -504,8 +530,8 @@ export const generateTimeSeriesData = async (
   const formattedInfo = buildContextText(industry || '', companyName || '', country || '', userPersona || '');
   
   try {
-    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
-      console.log('Using GPT 4o for time series data');
+    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini" || modelName === "gpt-4.5-preview") {
+      console.log('Using GPT 4o or gpt-4.5-preview for time series data');
       const messages = [
         {
           role: 'system' as const,
@@ -637,8 +663,8 @@ export const determineChatTopic = async (
 ) => {
   const formattedInfo = buildContextText(industry, companyName, country, userPersona);
   try {
-    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
-      console.log('Using GPT 4o for topic');
+    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini" || modelName === "gpt-4.5-preview") {
+      console.log('Using GPT 4o or gpt-4.5-preview for topic');
       // Use OpenAI
       const messages = [
         {
@@ -694,8 +720,8 @@ export const determineChartType = async (
 ) => {
   const formattedInfo = buildContextText(industry, companyName, country, userPersona);
   try {
-    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini") {
-      console.log('Using GPT 4o for chart type');
+    if (modelName === "GPT 4o" || modelName === "o1-mini" || modelName === "o3-mini" || modelName === "gpt-4.5-preview") {
+      console.log('Using GPT 4o or gpt-4.5-preview for chart type');
       // Use OpenAI
       const messages = [
         {

@@ -46,7 +46,7 @@ export default function ChatPage() {
   const { industry, companyName, country, userPersona } = useAppContext();
   
   // Model-related state
-  const availableModels = ["Llama 3.1", "GPT 4o", "o1-mini", "gpt-4o-mini", "o1-preview", "gpt-4-turbo", "gpt-3.5-turbo"];
+  const availableModels = ["Llama 3.1", "GPT 4o", "o1-mini", "gpt-4o-mini", "o1-preview", "gpt-4-turbo", "gpt-3.5-turbo", "gpt-4.5-preview"];
   const [modelName, setModelName] = useState(availableModels[0]);
   const [compareSuggestions, setCompareSuggestions] = useState(false);
   

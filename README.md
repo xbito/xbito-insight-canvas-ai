@@ -1,28 +1,21 @@
 # Insight Canvas AI
 
-A powerful platform for Conversational Analytics for Brand Intelligence, enabling detailed brand sentiment analysis through intuitive visualization and AI-guided insights.
+A platform for conversational analytics on brand information. It focuses on brand sentiment findings, visual summaries, and AI-based insights.
 
-## Disclaimer
+## Project Purpose
 
-This project is a playground for me. While in my job hunt a company that is in the market research space released
-some new features which inspired me to think about extending what they have released. We then discussed broader
-strategy and as part of my suggestions I proposed some of the features that now this project exposes.
+I built this as an experiment after seeing new features from a market research company. My goal was to showcase how  Software as a Service (SaaS) companies with smaller user groups, such as research analysts, can keep clients from leaving by making the tool useful to a bigger set of users. If more roles (like Marketers, PR or Sales) rely on it, it is more likely to become part of their day-to-day process. That lowers the chance of losing a client if a key user, the research analyst, leaves.
 
-But, it's not an actual project, it's more an experiment to test the limits of different AI models in two specific
-tasks, first the exploration / discovery of a brand sentiment and audience demographics dataset, and second
-the automatic creation of full dashboards out of an objective statement. Both features look to expand the user
-base of the theoretical platform functionality like this would live on.
+Note: This is not a real product. It is just a test project to see how far different AI models can go in helping a user explore a brand sentiment dataset. The data shown in it is made-up. An LLM produces it on the fly.
 
 To run this project you will need an access key from an OpenAI account with credits, and a locally running Ollama with Llama 3.1 running.
-
-*None of the data this application may show is usable, it is all fake. There is no dataset behind it.*
 
 ## Key Features
 
 - **AI-powered Conversational Interface**: Interact with your brand data through natural language queries
 - **Dynamic Data Visualizations**: Real-time chart generation using Chart.js
 - **Multiple AI Model Support**: Includes support for Llama 3.1 and GPT-4o
-- **Industry-specific Analysis**: Tailored insights for various market sectors
+- **Industry-specific and Persona-specific Analysis**: Tailored insights for various market sectors and user personas
 - **Automated Dashboard Creation**: Generate complete dashboards from simple objective statements
 - **Full-stack Architecture**: Built on Next.js with robust API functionality
 

@@ -28,21 +28,30 @@ To run this project you will need an access key from an OpenAI account with cred
 
 ## Screenshots
 
+### Homepage
+
+![Homepage](./docs/images/homepage-202503.png)
+
 ### Conversational Analytics Interface
 
-![Conversational Analytics Interface](./docs/images/conversation-interface.png)
+![Conversational Analytics Interface](./docs/images/conversational-interface-202503.png)
 
 *The AI-powered conversational interface allows users to get suggestions to further their exploration of the dataset.*
 
-![Conversational Analytics Interface](./docs/images/suggestions-compare.png)
+**Disclaimer: The data shown above is ficticious, an LLM generated it.**
+
+![Suggestions Models Comparison](./docs/images/suggestions-compare-202503.png)
 
 *The app also supports using multiple models to compare the suggestions.*
 
+**Disclaimer: The data shown above is ficticious, an LLM generated it.**
+
 ### Auto-generated Dashboard
 
-![Auto-generated Dashboard](./docs/images/dashboard-example.png)
+![Auto-generated Dashboard](./docs/images/dashboard-create-202503.png)
 
-*Example of a dashboard automatically generated from a business objective statement.*
+*Example of the create dashboard experience.*
+
 
 ## Getting Started
 
@@ -85,10 +94,14 @@ npm run dev
 
 This application currently supports the following AI models:
 
-- **GPT-4o** - OpenAI's latest multimodal model for advanced natural language processing and reasoning
-- **Llama 3.1 (8B)** - Meta's open-source language model running locally through Ollama
-- **Llama 3.1 (70B)** - The larger version of Meta's language model for more complex tasks
-
+- **Llama 3.1** - Meta's open-source language model running locally through Ollama
+- **GPT 4o** - OpenAI's latest multimodal model for advanced reasoning and content generation
+- **gpt-4o-mini** - OpenAI's smaller, more efficient version of GPT-4o
+- **gpt-4-turbo** - OpenAI's enhanced model designed for complex reasoning tasks
+- **gpt-3.5-turbo** - OpenAI's cost-effective model for general-purpose tasks
+- **o1-mini** - OpenAI's compact and efficient reasoning model
+- **o1-preview** - OpenAI's preview model with advanced reasoning capabilities
+- **gpt-4.5-preview** - OpenAI's preview of next-generation non-reasoning model capabilities
 
 ### Environment Variables
 
